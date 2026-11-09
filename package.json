@@ -1,11 +1,12 @@
 {
-  "name": "syncedlyrics",
+  "name": "synco",
   "version": "1.0.0",
   "description": "Get LRC format (synchronized) lyrics for your music in Node.js",
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
   "bin": {
+    "synco": "./dist/cli.cjs",
     "syncedlyrics": "./dist/cli.cjs"
   },
   "exports": {
@@ -28,6 +29,7 @@
     "prepublishOnly": "npm run build"
   },
   "keywords": [
+    "synco",
     "syncedlyrics",
     "lrc",
     "lyrics",
@@ -44,12 +46,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/0xSHARON/syncedlyrics.git"
+    "url": "https://github.com/0xSHARON/synco.git"
   },
   "bugs": {
-    "url": "https://github.com/0xSHARON/syncedlyrics/issues"
+    "url": "https://github.com/0xSHARON/synco/issues"
   },
-  "homepage": "https://github.com/0xSHARON/syncedlyrics#readme",
+  "homepage": "https://github.com/0xSHARON/synco#readme",
   "dependencies": {
     "axios": "^1.7.9",
     "cheerio": "^1.0.0",
@@ -65,3 +67,4 @@
     "node": ">=18.0.0"
   }
 }
+

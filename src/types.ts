@@ -53,3 +53,4 @@ export interface ILyrics {
   toStr(targetType: TargetType): string | null;
   saveLrcFile(filePath: string, targetType: TargetType): Promise<void>;
 }
+

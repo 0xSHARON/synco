@@ -1,8 +1,9 @@
 import assert from 'node:assert';
 import fs from 'node:fs';
 import path from 'node:path';
-import syncedlyrics, {
+import synco, {
   search,
+  syncedlyrics,
   Lyrics,
   TargetType,
   formatTime,
@@ -150,10 +151,14 @@ async function runTests() {
     assert.ok(result.includes('[00:'));
   });
 
-  await test('search() works with callable default export', async () => {
-    const result = await syncedlyrics('bad guy billie eilish');
-    assert.ok(typeof result === 'string');
-    assert.ok(result.includes('[00:'));
+  await test('search() works with callable default export synco and alias', async () => {
+    const result1 = await synco('bad guy billie eilish');
+    assert.ok(typeof result1 === 'string');
+    assert.ok(result1.includes('[00:'));
+
+    const result2 = await syncedlyrics('bad guy billie eilish');
+    assert.ok(typeof result2 === 'string');
+    assert.ok(result2.includes('[00:'));
   });
 
   await test('search() with plainOnly returns plaintext', async () => {
@@ -201,3 +206,4 @@ async function runTests() {
 }
 
 runTests();
+

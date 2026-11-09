@@ -62,3 +62,4 @@ export class Lyricsify extends LRCProvider {
     return null;
   }
 }
+

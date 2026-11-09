@@ -64,3 +64,4 @@ export class Lrclib extends LRCProvider {
     return this.getLrcById(best.id);
   }
 }
+

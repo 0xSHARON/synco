@@ -67,3 +67,4 @@ export class Lyrics implements ILyrics {
     await fs.promises.writeFile(resolvedPath, text, 'utf-8');
   }
 }
+

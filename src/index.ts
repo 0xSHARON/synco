@@ -54,7 +54,7 @@ export async function search(
           enhanced: Boolean(enhanced),
         };
 
-  const logger = new Logger('syncedlyrics', Boolean(options.verbose));
+  const logger = new Logger('synco', Boolean(options.verbose));
 
   if (options.plainOnly && options.syncedOnly) {
     logger.error('--plain-only and --synced-only flags cannot be used together.');
@@ -160,7 +160,7 @@ function selectProviders(
 }
 
 // Support callable default export as well as object properties
-interface SyncedlyricsCallable {
+export interface SyncoCallable {
   (searchTerm: string, options?: SearchOptions): Promise<string | null>;
   search: typeof search;
   Lyrics: typeof Lyrics;
@@ -175,7 +175,7 @@ interface SyncedlyricsCallable {
   Lyricsify: typeof Lyricsify;
 }
 
-const syncedlyrics = Object.assign(
+export const synco = Object.assign(
   function (searchTerm: string, options?: SearchOptions) {
     return search(searchTerm, options);
   },
@@ -192,6 +192,8 @@ const syncedlyrics = Object.assign(
     Deezer,
     Lyricsify,
   }
-) as SyncedlyricsCallable;
+) as SyncoCallable;
 
-export default syncedlyrics;
+export const syncedlyrics = synco;
+export default synco;
+

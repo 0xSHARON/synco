@@ -50,7 +50,7 @@ export class Musixmatch extends LRCProvider {
   }
 
   private async ensureToken(): Promise<void> {
-    const tokenFile = path.join(getCachePath('syncedlyrics'), 'musixmatch_token.json');
+    const tokenFile = path.join(getCachePath('synco'), 'musixmatch_token.json');
     const currentTime = Math.floor(Date.now() / 1000);
 
     try {
@@ -218,3 +218,4 @@ export class Musixmatch extends LRCProvider {
     return this.getLrcById(trackId);
   }
 }
+

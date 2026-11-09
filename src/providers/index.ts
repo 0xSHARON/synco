@@ -6,3 +6,4 @@ export { NetEase } from './netease.js';
 export { Genius } from './genius.js';
 export { Deezer } from './deezer.js';
 export { Lyricsify } from './lyricsify.js';
+

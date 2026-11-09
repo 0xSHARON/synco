@@ -44,7 +44,7 @@ export class Megalobiz extends LRCProvider {
         {
           params: { q: searchTerm },
           headers: {
-            'User-Agent': 'syncedlyrics-node/1.0 (https://github.com/0xSHARON/syncedlyrics)',
+            'User-Agent': 'synco-node/1.0 (https://github.com/0xSHARON/synco)',
           },
         }
       );
@@ -66,7 +66,7 @@ export class Megalobiz extends LRCProvider {
 
       const lrcResponse = await this.session.get<string>(lrcUrl, {
         headers: {
-          'User-Agent': 'syncedlyrics-node/1.0 (https://github.com/0xSHARON/syncedlyrics)',
+          'User-Agent': 'synco-node/1.0 (https://github.com/0xSHARON/synco)',
         },
         responseType: 'text',
       });
@@ -125,3 +125,4 @@ export class Megalobiz extends LRCProvider {
     return null;
   }
 }
+

@@ -87,3 +87,4 @@ export class Deezer extends LRCProvider {
     return this.getLrcById(match.id);
   }
 }
+

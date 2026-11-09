@@ -75,3 +75,4 @@ export class NetEase extends LRCProvider {
     return this.getLrcById(track.id);
   }
 }
+

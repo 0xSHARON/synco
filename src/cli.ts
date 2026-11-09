@@ -5,7 +5,7 @@ export async function runCli(): Promise<void> {
   const program = new Command();
 
   program
-    .name('syncedlyrics')
+    .name('synco')
     .description('Search for LRC format (synchronized lyrics) of a track')
     .version('1.0.0', '-V, --version', 'Output the version number')
     .argument('<search_term>', 'The search term to find the track (e.g. "Song Name Artist")')
@@ -48,3 +48,4 @@ export async function runCli(): Promise<void> {
 }
 
 runCli();
+

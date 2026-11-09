@@ -1,8 +1,8 @@
-# syncedlyrics
+# synco
 
 > Get time-synchronized LRC format lyrics for your music in Node.js and CLI.
 
-[![npm version](https://img.shields.io/npm/v/syncedlyrics.svg)](https://www.npmjs.com/package/syncedlyrics)
+[![npm version](https://img.shields.io/npm/v/synco.svg)](https://www.npmjs.com/package/synco)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 A fast, lightweight, and modern Node.js library and command-line tool that searches and downloads synchronized lyrics (`.lrc` files) from multiple online lyrics providers.
@@ -25,22 +25,22 @@ A fast, lightweight, and modern Node.js library and command-line tool that searc
 
 ### Global CLI
 ```bash
-npm install -g syncedlyrics
+npm install -g synco
 ```
 Or run directly with `npx`:
 ```bash
-npx syncedlyrics "SEARCH_TERM"
+npx synco "SEARCH_TERM"
 ```
 
 ### Local Project Dependency
 ```bash
-npm install syncedlyrics
+npm install synco
 ```
 ```bash
-pnpm add syncedlyrics
+pnpm add synco
 ```
 ```bash
-yarn add syncedlyrics
+yarn add synco
 ```
 
 ---
@@ -48,28 +48,29 @@ yarn add syncedlyrics
 ## 🚀 CLI Usage
 
 ```bash
-syncedlyrics "SEARCH_TERM" [options]
+synco "SEARCH_TERM" [options]
 ```
+*(Also available as `syncedlyrics` alias)*
 
 ### Examples:
 ```bash
 # Basic search (downloads to "{search_term}.lrc" by default)
-syncedlyrics "Bohemian Rhapsody Queen"
+synco "Bohemian Rhapsody Queen"
 
 # Save to a custom file
-syncedlyrics "Blinding Lights The Weeknd" -o "blinding_lights.lrc"
+synco "Blinding Lights The Weeknd" -o "blinding_lights.lrc"
 
 # Search specific providers only
-syncedlyrics "bad guy billie eilish" -p lrclib megalobiz
+synco "bad guy billie eilish" -p lrclib megalobiz
 
 # Get plaintext lyrics only
-syncedlyrics "Shape of You Ed Sheeran" --plain-only
+synco "Shape of You Ed Sheeran" --plain-only
 
 # Enhanced word-by-word karaoke format
-syncedlyrics "Shape of You Ed Sheeran" --enhanced
+synco "Shape of You Ed Sheeran" --enhanced
 
 # Enable verbose debug logs
-syncedlyrics "Hotel California Eagles" -v
+synco "Hotel California Eagles" -v
 ```
 
 ### Options
@@ -93,22 +94,22 @@ syncedlyrics "Hotel California Eagles" -v
 
 ### TypeScript / ES Modules (`import`)
 ```typescript
-import syncedlyrics, { search } from 'syncedlyrics';
+import synco, { search } from 'synco';
 
 // Simple search
 const lrc = await search('Bohemian Rhapsody Queen');
 console.log(lrc);
 
 // Or call the default export directly
-const lrcText = await syncedlyrics('Hotel California Eagles');
+const lrcText = await synco('Hotel California Eagles');
 ```
 
 ### CommonJS (`require`)
 ```javascript
-const syncedlyrics = require('syncedlyrics');
+const synco = require('synco');
 
 async function main() {
-  const lrc = await syncedlyrics.search('Blinding Lights The Weeknd');
+  const lrc = await synco.search('Blinding Lights The Weeknd');
   console.log(lrc);
 }
 main();
@@ -117,7 +118,7 @@ main();
 ### Advanced Options
 
 ```typescript
-import { search } from 'syncedlyrics';
+import { search } from 'synco';
 
 const lrc = await search('bad guy billie eilish', {
   // Only search specific providers
@@ -149,7 +150,7 @@ import {
   strScore,
   Lyrics,
   TargetType,
-} from 'syncedlyrics';
+} from 'synco';
 
 // Convert synced LRC to clean plaintext
 const plain = syncedToPlaintext(lrc);

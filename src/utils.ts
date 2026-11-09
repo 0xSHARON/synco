@@ -211,7 +211,7 @@ export function getBestMatch<T>(
 /**
  * Resolves or creates a system cache directory for the library.
  */
-export function getCachePath(libName = 'syncedlyrics'): string {
+export function getCachePath(libName = 'synco'): string {
   const platform = process.platform;
   let baseDir: string;
 
