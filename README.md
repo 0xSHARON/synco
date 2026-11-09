@@ -43,6 +43,11 @@ pnpm add @0xsharon/synco
 yarn add @0xsharon/synco
 ```
 
+### Install from GitHub Packages
+```bash
+npm install @0xsharon/synco --registry=https://npm.pkg.github.com
+```
+
 ---
 
 ## 🚀 CLI Usage
@@ -150,7 +155,7 @@ import {
   strScore,
   Lyrics,
   TargetType,
-} from 'synco';
+} from '@0xsharon/synco';
 
 // Convert synced LRC to clean plaintext
 const plain = syncedToPlaintext(lrc);
