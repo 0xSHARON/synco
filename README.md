@@ -1,8 +1,8 @@
-# synco
+# @0xsharon/synco
 
 > Get time-synchronized LRC format lyrics for your music in Node.js and CLI.
 
-[![npm version](https://img.shields.io/npm/v/synco.svg)](https://www.npmjs.com/package/synco)
+[![npm version](https://img.shields.io/npm/v/@0xsharon/synco.svg)](https://www.npmjs.com/package/@0xsharon/synco)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 A fast, lightweight, and modern Node.js library and command-line tool that searches and downloads synchronized lyrics (`.lrc` files) from multiple online lyrics providers.
@@ -25,22 +25,22 @@ A fast, lightweight, and modern Node.js library and command-line tool that searc
 
 ### Global CLI
 ```bash
-npm install -g synco
+npm install -g @0xsharon/synco
 ```
 Or run directly with `npx`:
 ```bash
-npx synco "SEARCH_TERM"
+npx @0xsharon/synco "SEARCH_TERM"
 ```
 
 ### Local Project Dependency
 ```bash
-npm install synco
+npm install @0xsharon/synco
 ```
 ```bash
-pnpm add synco
+pnpm add @0xsharon/synco
 ```
 ```bash
-yarn add synco
+yarn add @0xsharon/synco
 ```
 
 ---
@@ -94,7 +94,7 @@ synco "Hotel California Eagles" -v
 
 ### TypeScript / ES Modules (`import`)
 ```typescript
-import synco, { search } from 'synco';
+import synco, { search } from '@0xsharon/synco';
 
 // Simple search
 const lrc = await search('Bohemian Rhapsody Queen');
@@ -106,7 +106,7 @@ const lrcText = await synco('Hotel California Eagles');
 
 ### CommonJS (`require`)
 ```javascript
-const synco = require('synco');
+const synco = require('@0xsharon/synco');
 
 async function main() {
   const lrc = await synco.search('Blinding Lights The Weeknd');
@@ -118,7 +118,7 @@ main();
 ### Advanced Options
 
 ```typescript
-import { search } from 'synco';
+import { search } from '@0xsharon/synco';
 
 const lrc = await search('bad guy billie eilish', {
   // Only search specific providers

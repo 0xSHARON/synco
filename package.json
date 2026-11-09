@@ -1,5 +1,5 @@
 {
-  "name": "synco",
+  "name": "@0xsharon/synco",
   "version": "1.0.0",
   "description": "Get LRC format (synchronized) lyrics for your music in Node.js",
   "main": "./dist/index.cjs",
