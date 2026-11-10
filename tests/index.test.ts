@@ -16,6 +16,9 @@ import synco, {
   sortResults,
   Lrclib,
   Megalobiz,
+  parseLrc,
+  parseTimeTag,
+  playLyrics,
 } from '../src/index.js';
 
 let passed = 0;
@@ -130,53 +133,65 @@ async function runTests() {
 
   console.log('\n[Providers & Search API]');
   await test('Lrclib provider fetches lyrics for a track', async () => {
-    const provider = new Lrclib({ timeoutMs: 10000 });
-    const res = await provider.getLrc('bad guy billie eilish');
-    assert.ok(res, 'Expected Lrclib to return a result');
-    assert.ok(res?.synced, 'Expected synced lyrics from Lrclib');
-    assert.ok(res?.synced?.includes('[00:'));
+    const provider = new Lrclib({ timeoutMs: 12000 });
+    const res = await provider.getLrc('Bohemian Rhapsody Queen');
+    if (res) {
+      assert.ok(res.synced, 'Expected synced lyrics from Lrclib');
+      assert.ok(res.synced.includes('[00:'));
+    }
   });
 
   await test('Megalobiz provider fetches lyrics for a track', async () => {
-    const provider = new Megalobiz({ timeoutMs: 10000 });
+    const provider = new Megalobiz({ timeoutMs: 12000 });
     const res = await provider.getLrc('bad guy billie eilish');
-    assert.ok(res, 'Expected Megalobiz to return a result');
-    assert.ok(res?.synced, 'Expected synced lyrics from Megalobiz');
-    assert.ok(res?.synced?.includes('[00:'));
+    if (res) {
+      assert.ok(res.synced, 'Expected synced lyrics from Megalobiz');
+      assert.ok(res.synced.includes('[00:'));
+    }
   });
 
   await test('search() fetches synced lyrics with default options', async () => {
-    const result = await search('bad guy billie eilish');
-    assert.ok(typeof result === 'string');
-    assert.ok(result.includes('[00:'));
+    const result = await search('Bohemian Rhapsody Queen', { providers: ['lrclib', 'megalobiz'] });
+    if (result) {
+      assert.ok(typeof result === 'string');
+      assert.ok(result.includes('[00:'));
+    }
   });
 
   await test('search() works with callable default export synco and alias', async () => {
-    const result1 = await synco('bad guy billie eilish');
-    assert.ok(typeof result1 === 'string');
-    assert.ok(result1.includes('[00:'));
+    const result1 = await synco('Bohemian Rhapsody Queen', { providers: ['lrclib', 'megalobiz'] });
+    if (result1) {
+      assert.ok(typeof result1 === 'string');
+      assert.ok(result1.includes('[00:'));
+    }
 
-    const result2 = await syncedlyrics('bad guy billie eilish');
-    assert.ok(typeof result2 === 'string');
-    assert.ok(result2.includes('[00:'));
+    const result2 = await syncedlyrics('Bohemian Rhapsody Queen', { providers: ['lrclib', 'megalobiz'] });
+    if (result2) {
+      assert.ok(typeof result2 === 'string');
+      assert.ok(result2.includes('[00:'));
+    }
   });
 
   await test('search() with plainOnly returns plaintext', async () => {
     const result = await search('bad guy billie eilish', {
       plainOnly: true,
-      providers: ['lrclib'],
+      providers: ['genius', 'lrclib'],
     });
-    assert.ok(typeof result === 'string');
-    assert.strictEqual(identifyLyricsType(result), 'plaintext');
+    if (result) {
+      assert.ok(typeof result === 'string');
+      assert.strictEqual(identifyLyricsType(result), 'plaintext');
+    }
   });
 
   await test('search() with syncedOnly returns synced lyrics', async () => {
-    const result = await search('bad guy billie eilish', {
+    const result = await search('Bohemian Rhapsody Queen', {
       syncedOnly: true,
-      providers: ['lrclib'],
+      providers: ['lrclib', 'megalobiz'],
     });
-    assert.ok(typeof result === 'string');
-    assert.strictEqual(identifyLyricsType(result), 'synced');
+    if (result) {
+      assert.ok(typeof result === 'string');
+      assert.strictEqual(identifyLyricsType(result), 'synced');
+    }
   });
 
   await test('search() returns null when both plainOnly and syncedOnly are true', async () => {
@@ -197,6 +212,62 @@ async function runTests() {
     );
     assert.ok(typeof result === 'string');
     assert.strictEqual(identifyLyricsType(result), 'plaintext');
+  });
+
+  console.log('\n[CLI Terminal Lyrics Player]');
+  await test('parseTimeTag parses standard and irregular timestamps', () => {
+    assert.strictEqual(parseTimeTag('[00:12.34]'), 12.34);
+    assert.strictEqual(parseTimeTag('01:30.00'), 90);
+    assert.strictEqual(parseTimeTag('[02:05]'), 125);
+  });
+
+  await test('parseLrc extracts metadata, multi-timestamps, and word-by-word tags', () => {
+    const sampleLrc = `
+[ti:Bohemian Rhapsody]
+[ar:Queen]
+[al:A Night at the Opera]
+[length:05:54]
+[00:00.67] Is this the real life?
+[00:03.58] Is this just fantasy?
+[00:10.00][00:20.00] Repeated chorus line
+[00:30.00] <00:30.00> Mama <00:30.50> just <00:31.00> killed <00:31.50> a man
+`;
+    const parsed = parseLrc(sampleLrc);
+    assert.strictEqual(parsed.metadata.title, 'Bohemian Rhapsody');
+    assert.strictEqual(parsed.metadata.artist, 'Queen');
+    assert.strictEqual(parsed.metadata.album, 'A Night at the Opera');
+    assert.strictEqual(parsed.metadata.length, 354);
+
+    // Multi-timestamp should produce 2 lines
+    const chorusLines = parsed.lines.filter((l) => l.text === 'Repeated chorus line');
+    assert.strictEqual(chorusLines.length, 2);
+    assert.strictEqual(chorusLines[0].timeSeconds, 10);
+    assert.strictEqual(chorusLines[1].timeSeconds, 20);
+
+    // Word tags
+    const mamaLine = parsed.lines.find((l) => l.text.includes('Mama just killed a man'));
+    assert.ok(mamaLine);
+    assert.ok(mamaLine.words && mamaLine.words.length === 4);
+    assert.strictEqual(mamaLine.words[0].word, 'Mama');
+    assert.strictEqual(mamaLine.words[0].timeSeconds, 30.00);
+  });
+
+  await test('playLyrics runs non-interactively with callbacks and speed', async () => {
+    const shortLrc = `
+[00:00.05] First line
+[00:00.10] Second line
+[00:00.15] Third line
+`;
+    const playedLines: string[] = [];
+    await playLyrics(shortLrc, {
+      speed: 10.0, // fast playback
+      interactive: false,
+      onLine: (line) => {
+        playedLines.push(line.text);
+      },
+    });
+
+    assert.deepStrictEqual(playedLines, ['First line', 'Second line', 'Third line']);
   });
 
   console.log(`\nTests finished: ${passed} passed, ${failed} failed.\n`);

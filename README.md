@@ -28,14 +28,47 @@
 
 ## ⚡ Interactive CLI & Quick Demo
 
-Fetch synchronized `.lrc` lyrics instantly from your terminal without installing anything:
+### 1. 🎤 Play Synchronized Lyrics Live in Your Terminal
+
+Turn your terminal into a real-time karaoke screen with synchronized line and word-by-word highlighting:
+
+```bash
+# Play lyrics in real time directly in CLI:
+npx @0xsharon/synco play "Queen - Bohemian Rhapsody"
+
+# Or use the --play (-P) flag with custom speed:
+npx @0xsharon/synco "Queen - Bohemian Rhapsody" --play --speed 1.25
+
+# Play an existing local .lrc file:
+npx @0xsharon/synco play ./my_song.lrc
+```
+
+```
+  ╭─────────────────────────────────────────────────────────────╮
+  │  🎵 SYNCO TERMINAL LYRICS PLAYER                            │
+  │  Track: "Bohemian Rhapsody" — Queen                         │
+  │                                                             │
+  │  ⏱️  [ 01:14 / 05:54 ]  ━━━━━━●━━━━━━━━━━━━━━━━━━━  [1.0x]   │
+  ╰─────────────────────────────────────────────────────────────╯
+
+     Is this the real life?
+     Is this just fantasy?
+  🎤 ▶  CAUGHT IN A LANDSLIDE, NO ESCAPE FROM REALITY  ◀
+     Open your eyes, look up to the skies and see...
+     I'm just a poor boy, I need no sympathy
+
+  ───────────────────────────────────────────────────────────────
+  [Space] Pause/Play  │  [←/→] Seek 5s  │  [+/-] Speed  │  [q] Quit
+```
+
+### 2. Search & Download `.lrc` Files
 
 ```bash
 npx @0xsharon/synco "Queen - Bohemian Rhapsody" --synced-only
 ```
 
 ```
-  🎵 synco v1.0.0
+  🎵 synco v1.1.0
   ✔ Query: "Queen - Bohemian Rhapsody"
   ✔ Match: "Bohemian Rhapsody" by Queen (Score: 100%, Duration: 05:54)
   ✔ Provider: LRCLIB (latency: 142ms)
@@ -166,7 +199,16 @@ Dual ESM and CommonJS bundles are included out of the box with zero native compi
 ### 1. Terminal CLI Usage
 
 ```bash
-# Basic search (downloads to "{search_term}.lrc" by default)
+# 🎤 Play synchronized lyrics in real time directly in your terminal:
+synco play "Queen - Bohemian Rhapsody"
+
+# Or use the -P / --play flag on any search term:
+synco "Blinding Lights The Weeknd" -P
+
+# Play an existing local .lrc file at 1.5x speed:
+synco ./my_song.lrc --play --speed 1.5
+
+# Basic search & download (saves to "{search_term}.lrc" by default)
 synco "Bohemian Rhapsody Queen"
 
 # Save to a specific file path
@@ -185,10 +227,25 @@ synco "Starboy The Weeknd" --enhanced
 synco "Hotel California Eagles" -v
 ```
 
+#### 🎮 Terminal Player Interactive Controls
+
+When running in interactive mode (`synco play` or `--play`), the terminal responds to live keystrokes:
+
+| Key | Action |
+| :--- | :--- |
+| **`[Space]`** or **`k`** | Toggle Pause / Resume playback |
+| **`[→]`** or **`l`** | Seek forward 5 seconds |
+| **`[←]`** or **`h`** | Seek backward 5 seconds |
+| **`[+]`** or **`↑`** | Increase playback speed (+0.25x) |
+| **`[-]`** or **`↓`** | Decrease playback speed (-0.25x) |
+| **`[q]`** or **`Ctrl+C`** | Gracefully quit player and restore terminal cursor |
+
 #### CLI Command-Line Options
 
 | Flag | Short | Description | Default |
 | :--- | :--- | :--- | :--- |
+| `-P, --play` | `-P` | Stream and play synchronized lyrics in real time in the terminal | `false` |
+| `--speed <num>` | | Playback speed multiplier (e.g. `1.0`, `1.5`, `2.0`) | `1.0` |
 | `--output <path>` | `-o` | Output file path (`{search_term}` is replaced dynamically) | `"{search_term}.lrc"` |
 | `--providers <list...>` | `-p` | Space-separated list of providers to search | *all available* |
 | `--lang <code>` | `-l` | Translation language code (e.g., `es`, `de`, `fr`) | `undefined` |
@@ -207,7 +264,7 @@ synco "Hotel California Eagles" -v
 #### TypeScript / ES Modules (`import`)
 
 ```typescript
-import synco, { search } from '@0xsharon/synco';
+import synco, { search, playLyrics, parseLrc } from '@0xsharon/synco';
 
 // Basic search (returns LRC string or null)
 const lrc = await search('Queen - Bohemian Rhapsody');
@@ -215,6 +272,15 @@ console.log(lrc);
 
 // Or call default export directly
 const lyrics = await synco('Hotel California Eagles');
+
+// 🎤 Play synchronized lyrics directly from Node.js
+await synco.play('Queen - Bohemian Rhapsody');
+
+// Or parse LRC into structured lines and timestamps
+const { metadata, lines } = parseLrc(lrc);
+console.log(lines[0]);
+// => { timeSeconds: 0.67, rawTime: '[00:00.67]', text: 'Is this the real life?' }
+```
 ```
 
 #### CommonJS (`require`)
@@ -374,6 +440,38 @@ function search(options: SearchOptions | string): Promise<string | null>;
 | `lang` | `string` | `undefined` | Translation language code |
 | `timeoutMs` | `number` | `10000` | Network request timeout per provider in milliseconds |
 | `verbose` | `boolean` | `false` | Enable verbose diagnostic logging to stderr |
+
+---
+
+### `playLyrics(lrcText, options)` / `synco.play(query, options)`
+
+Streams and plays synchronized lyrics in real time in the terminal with live line and karaoke word highlighting.
+
+```ts
+function playLyrics(lrcText: string, options?: PlayerOptions): Promise<void>;
+```
+
+#### `PlayerOptions` Parameters
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `speed` | `number` | `1.0` | Playback speed multiplier (e.g. `1.0`, `1.5`, `2.0`) |
+| `interactive` | `boolean` | `true` (TTY) | Enables interactive ANSI terminal UI with progress bar and controls |
+| `title` | `string` | `undefined` | Track title override |
+| `artist` | `string` | `undefined` | Track artist override |
+| `startPosition` | `number` | `0` | Start playback from a specific timestamp in seconds |
+| `onLine` | `(line, index) => void` | `undefined` | Callback fired whenever an active lyrics line changes |
+| `onTick` | `(currentTime, index) => void` | `undefined` | Callback fired on every playback clock tick |
+
+---
+
+### `parseLrc(lrcText)`
+
+Parses raw LRC lyrics text into structured metadata and chronologically sorted lines with timestamps and word-by-word karaoke tags.
+
+```ts
+function parseLrc(lrcText: string): ParsedLrc;
+```
 
 ---
 

@@ -12,9 +12,19 @@ import {
 } from './providers/index.js';
 import { Logger } from './utils.js';
 
+import {
+  playLyrics,
+  parseLrc,
+  parseTimeTag,
+  type PlayableLine,
+  type PlayerOptions,
+  type ParsedLrc,
+} from './player.js';
+
 export * from './types.js';
 export * from './lyrics.js';
 export * from './utils.js';
+export * from './player.js';
 export * from './providers/index.js';
 
 /**
@@ -163,6 +173,10 @@ function selectProviders(
 export interface SyncoCallable {
   (searchTerm: string, options?: SearchOptions): Promise<string | null>;
   search: typeof search;
+  play: typeof playLyrics;
+  playLyrics: typeof playLyrics;
+  parseLrc: typeof parseLrc;
+  parseTimeTag: typeof parseTimeTag;
   Lyrics: typeof Lyrics;
   TargetType: typeof TargetType;
   LRCProvider: typeof LRCProvider;
@@ -181,6 +195,10 @@ export const synco = Object.assign(
   },
   {
     search,
+    play: playLyrics,
+    playLyrics,
+    parseLrc,
+    parseTimeTag,
     Lyrics,
     TargetType,
     LRCProvider,

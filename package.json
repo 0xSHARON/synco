@@ -1,6 +1,6 @@
 {
   "name": "@0xsharon/synco",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "High-performance synchronized lyrics (.lrc) & karaoke engine for Node.js and CLI. Multi-provider cascade (LRCLIB, Musixmatch, Megalobiz, NetEase, Deezer, Genius) with sub-second fuzzy matching.",
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
