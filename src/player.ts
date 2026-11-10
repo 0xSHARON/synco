@@ -219,6 +219,43 @@ export async function playLyrics(lrcText: string, options: PlayerOptions = {}): 
     showCursor: '\x1b[?25h',
   };
 
+  /**
+   * Returns the terminal display width of a string.
+   * Strips ANSI escape codes, then counts each character's visual column width:
+   *  - Variation selectors (U+FE00–FE0F), ZWJ (U+200D), combining marks → 0
+   *  - Emoji (U+1F000+), CJK unified/compatibility, fullwidth forms → 2
+   *  - Everything else (ASCII, block elements ▰▱▇▆▅▄▃◈, etc.) → 1
+   */
+  const displayWidth = (str: string): number => {
+    const plain = str.replace(/\x1b\[[0-9;]*m/g, '');
+    let w = 0;
+    for (const char of plain) {
+      const cp = char.codePointAt(0) ?? 0;
+      // Zero-width: variation selectors, ZWJ, combining diacritics
+      if (
+        (cp >= 0xfe00 && cp <= 0xfe0f) ||
+        cp === 0x200d ||
+        (cp >= 0x0300 && cp <= 0x036f)
+      ) {
+        continue;
+      }
+      // Wide: Emoji plane (U+1F000+), CJK, fullwidth / halfwidth forms
+      if (
+        cp >= 0x1f000 ||
+        (cp >= 0x2e80 && cp <= 0x9fff) ||
+        (cp >= 0xf900 && cp <= 0xfaff) ||
+        (cp >= 0xfe30 && cp <= 0xfe4f) ||
+        (cp >= 0xff01 && cp <= 0xff60) ||
+        (cp >= 0xffe0 && cp <= 0xffe6)
+      ) {
+        w += 2;
+      } else {
+        w += 1;
+      }
+    }
+    return w;
+  };
+
   // Helper to render interactive TTY frame
   const renderFrame = (activeIndex: number) => {
     if (!isInteractive) return;
@@ -254,21 +291,21 @@ export async function playLyrics(lrcText: string, options: PlayerOptions = {}): 
     // Header with Equalizer & Badge
     const headerTitle = `🎵 SYNCO PLAYER ${colors.badge}`;
     const headerPlain = `🎵 SYNCO PLAYER [${th.displayName}]`;
-    const spaceAfterHeader = Math.max(2, boxWidth - headerPlain.length - 18);
+    const spaceAfterHeader = Math.max(2, boxWidth - displayWidth(headerPlain) - 18);
     frame += `  ${colors.primary}${border.vertical}${colors.reset}  ${colors.bold}${headerTitle}${colors.reset}${' '.repeat(spaceAfterHeader)}${eqBars}  ${colors.primary}${border.vertical}${colors.reset}\n`;
 
     // Track Title line
     const titleStr = `Track: "${trackTitle}"${trackArtist ? ` — ${trackArtist}` : ''}`;
-    const truncatedTitle = titleStr.length > boxWidth - 4 ? titleStr.slice(0, boxWidth - 7) + '...' : titleStr;
-    frame += `  ${colors.primary}${border.vertical}${colors.reset}  ${colors.secondary}${truncatedTitle}${colors.reset}${' '.repeat(Math.max(0, boxWidth - truncatedTitle.length - 2))} ${colors.primary}${border.vertical}${colors.reset}\n`;
+    const truncatedTitle = displayWidth(titleStr) > boxWidth - 4 ? titleStr.slice(0, boxWidth - 7) + '...' : titleStr;
+    frame += `  ${colors.primary}${border.vertical}${colors.reset}  ${colors.secondary}${truncatedTitle}${colors.reset}${' '.repeat(Math.max(0, boxWidth - displayWidth(truncatedTitle) - 3))} ${colors.primary}${border.vertical}${colors.reset}\n`;
 
     // Spacer
-    frame += `  ${colors.primary}${border.vertical}${colors.reset}${' '.repeat(boxWidth)} ${colors.primary}${border.vertical}${colors.reset}\n`;
+    frame += `  ${colors.primary}${border.vertical}${colors.reset}${' '.repeat(boxWidth)}${colors.primary}${border.vertical}${colors.reset}\n`;
 
     // Time & Progress Bar
     const timePlain = `⏱️  [ ${formatTime(playbackPos)} / ${formatTime(totalDuration)} ]  [${speed.toFixed(1)}x]${isPaused ? ' ⏸ PAUSED' : ''}`;
     const timeDisplay = `⏱️  [ ${formatTime(playbackPos)} / ${formatTime(totalDuration)} ]  ${bar}  [${speed.toFixed(1)}x]${isPaused ? ` \x1b[93m⏸ PAUSED${colors.reset}` : ''}`;
-    const padLen = Math.max(0, boxWidth - timePlain.length - barWidth - 4);
+    const padLen = Math.max(0, boxWidth - displayWidth(timePlain) - barWidth - 5);
     frame += `  ${colors.primary}${border.vertical}${colors.reset}  ${timeDisplay}${' '.repeat(padLen)} ${colors.primary}${border.vertical}${colors.reset}\n`;
 
     // Bottom of box
