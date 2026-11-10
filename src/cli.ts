@@ -89,8 +89,8 @@ export async function runCli(): Promise<void> {
           return;
         }
 
-        // Check if user requested --no-play or piping
-        const shouldPlay = opts.play !== false && Boolean(process.stdout.isTTY);
+        // Check if user requested --no-play
+        const shouldPlay = opts.play !== false;
 
         if (!shouldPlay) {
           if (!opts.output) {
@@ -110,14 +110,53 @@ export async function runCli(): Promise<void> {
         }
 
         const speed = parseFloat(opts.speed) || 1.0;
-        await playLyrics(lrcContent, {
-          speed,
-          theme: opts.theme || 'neon',
-          syncSpotify: detectedSpotify && opts.sync,
-          title: spotifyTrackInfo?.title || query,
-          artist: spotifyTrackInfo?.artist || '',
-          startPosition: spotifyTrackInfo?.position ?? 0,
-        });
+        let activeQuery = query;
+        let currentLrc = lrcContent;
+        let currentTrackInfo = spotifyTrackInfo;
+
+        // Interactive sync & playback loop (auto-switches lyrics when Spotify track changes)
+        while (shouldPlay) {
+          let nextSpotifyTrack: SpotifyTrack | null = null;
+          const abortCtrl = new AbortController();
+
+          await playLyrics(currentLrc, {
+            speed,
+            theme: opts.theme || 'neon',
+            syncSpotify: detectedSpotify && opts.sync,
+            title: currentTrackInfo?.title || activeQuery,
+            artist: currentTrackInfo?.artist || '',
+            startPosition: currentTrackInfo?.position ?? 0,
+            signal: abortCtrl.signal,
+            onSpotifyTrackChange: (newTrack) => {
+              nextSpotifyTrack = newTrack;
+              abortCtrl.abort();
+            },
+          });
+
+          // If track changed on Spotify during live sync, load new lyrics and continue!
+          if (nextSpotifyTrack && detectedSpotify && opts.sync) {
+            console.log(`\n🎵 Spotify track changed to: "${(nextSpotifyTrack as SpotifyTrack).query}"`);
+            console.log(`🔍 Fetching new synchronized lyrics...`);
+            const newLrc = await search((nextSpotifyTrack as SpotifyTrack).query, {
+              syncedOnly: true,
+              providers: opts.providers,
+              enhanced: opts.enhanced,
+              verbose: opts.verbose,
+            });
+
+            if (newLrc && identifyLyricsType(newLrc) === 'synced') {
+              currentLrc = newLrc;
+              currentTrackInfo = nextSpotifyTrack;
+              activeQuery = (nextSpotifyTrack as SpotifyTrack).query;
+              continue;
+            } else {
+              console.log(`⚠️ No synced lyrics found for "${(nextSpotifyTrack as SpotifyTrack).query}".`);
+              break;
+            }
+          } else {
+            break;
+          }
+        }
 
         if (opts.output) {
           const outPath = opts.output.replace('{search_term}', query);

@@ -452,3 +452,4 @@ export function getBouncingIndicator(wordIndex: number, totalWords: number, them
   }
   return `${theme.colors.primary}▶${c.reset}`;
 }
+
