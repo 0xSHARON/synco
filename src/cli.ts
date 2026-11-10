@@ -30,7 +30,7 @@ export async function runCli(): Promise<void> {
   // 1. `synco get [track_or_url]` Sub-command
   // ==========================================
   program
-    .command('get [searchTerm]')
+    .command('get [searchTerm...]')
     .description('Auto-sync lyrics from active Spotify playback, Spotify URL, or search query')
     .option('-s, --sync', 'Continuously sync with Spotify desktop player in real time', true)
     .option('-t, --theme <theme>', 'Visual animation theme (neon, matrix, synthwave, gradient, minimal, karaoke, dracula, ocean, classic)', 'neon')
@@ -40,9 +40,9 @@ export async function runCli(): Promise<void> {
     .option('--no-play', 'Output or save lyrics without launching interactive player')
     .option('--enhanced', 'Word-by-word karaoke timing if available', false)
     .option('-v, --verbose', 'Show verbose debug logs', false)
-    .action(async (searchTerm: string | undefined, opts: any) => {
+    .action(async (searchTerm: string[] | string | undefined, opts: any) => {
       try {
-        let query = searchTerm?.trim() || '';
+        let query = Array.isArray(searchTerm) ? searchTerm.join(' ').trim() : (searchTerm?.trim() || '');
         let detectedSpotify = false;
         let spotifyTrackInfo: SpotifyTrack | null = null;
 
@@ -247,17 +247,18 @@ export async function runCli(): Promise<void> {
     });
 
   // ==========================================
-  // 3. `synco play <song>` Sub-command
+  // 3. `synco play <song...>` Sub-command
   // ==========================================
   program
-    .command('play <song>')
+    .command('play <song...>')
     .description('Stream and play synchronized lyrics in real time directly in your terminal')
     .option('-t, --theme <theme>', 'Visual theme (neon, matrix, synthwave, gradient, minimal, karaoke, dracula, ocean, classic)', 'neon')
     .option('--speed <multiplier>', 'Playback speed multiplier', '1.0')
     .option('-p, --providers <providers...>', 'Providers to search')
     .option('--enhanced', 'Karaoke word-by-word timing', false)
     .option('-v, --verbose', 'Verbose logs', false)
-    .action(async (song: string, cmdOpts: any) => {
+    .action(async (songParts: string[] | string, cmdOpts: any) => {
+      const song = Array.isArray(songParts) ? songParts.join(' ').trim() : songParts.trim();
       let query = song;
       let title = song;
       let artist = '';
@@ -334,10 +335,10 @@ export async function runCli(): Promise<void> {
     });
 
   // ==========================================
-  // 5. Root `synco [search_term]` Default Action
+  // 5. Root `synco [search_term...]` Default Action
   // ==========================================
   program
-    .argument('[search_term]', 'The search term to find the track or local .lrc file path')
+    .argument('[search_term...]', 'The search term to find the track or local .lrc file path')
     .option(
       '-p, --providers <providers...>',
       'Providers to include in the searching (e.g. lrclib megalobiz musixmatch netease genius)'
@@ -352,8 +353,12 @@ export async function runCli(): Promise<void> {
     .option('-P, --play', 'Play synchronized lyrics in real time in the CLI terminal', false)
     .option('-t, --theme <theme>', 'Visual animation theme', 'neon')
     .option('--speed <multiplier>', 'Playback speed multiplier (e.g. 1.0, 1.5, 2.0)', '1.0')
-    .action(async (searchTerm: string | undefined, opts: any) => {
+    .action(async (searchTermParts: string[] | string | undefined, opts: any) => {
       try {
+        const searchTerm = Array.isArray(searchTermParts)
+          ? searchTermParts.join(' ').trim()
+          : (searchTermParts?.trim() || '');
+
         // If no searchTerm provided, auto-redirect to Spotify auto-get!
         if (!searchTerm) {
           const spotify = await getSpotifyCurrentTrack();

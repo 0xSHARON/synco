@@ -114,6 +114,9 @@ Write-Output "READY"
 
     const queryScript = `
 $spot = $mgr.GetSessions() | ? { $_.SourceAppUserModelId -like "*Spotify*" } | Select -First 1
+if (-not $spot) {
+    $spot = $mgr.GetCurrentSession()
+}
 if ($spot) {
     $tl = $spot.GetTimelineProperties()
     $pb = $spot.GetPlaybackInfo()

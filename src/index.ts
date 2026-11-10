@@ -10,7 +10,7 @@ import {
   Lyricsify,
   LRCProvider,
 } from './providers/index.js';
-import { Logger } from './utils.js';
+import { Logger, cleanSearchQuery } from './utils.js';
 
 import {
   playLyrics,
@@ -165,7 +165,7 @@ export async function search(
     },
     {
       name: 'netease',
-      create: () => new NetEase({ lang: opts.lang, timeoutMs: opts.timeoutMs, verbose: opts.verbose }),
+      create: () => new NetEase({ lang: opts.lang, timeoutMs: opts.timeoutMs ?? 3000, verbose: opts.verbose }),
     },
     {
       name: 'genius',
@@ -218,6 +218,29 @@ export async function search(
       }
     } catch (err: any) {
       logger.debug(`Error from provider ${provider.name}: ${err?.message ?? err}`);
+    }
+  }
+
+  // Fallback: If not found and search term contained noise (e.g. feat, remastered, video, audio tags),
+  // try again with the sanitized/cleaned search term.
+  if (!combinedLyrics.isPreferred(targetType)) {
+    const cleaned = cleanSearchQuery(effectiveSearchTerm);
+    if (cleaned && cleaned.toLowerCase() !== effectiveSearchTerm.toLowerCase()) {
+      logger.debug(`Trying fallback query with cleaned term: "${cleaned}"`);
+      for (const provider of providerInstances) {
+        try {
+          const lrc = await provider.getLrc(cleaned);
+          if (lrc) {
+            combinedLyrics.update(lrc);
+            if (combinedLyrics.isPreferred(targetType)) {
+              logger.debug(`Found preferred lyrics using cleaned term from: ${provider.name}`);
+              break;
+            }
+          }
+        } catch (err: any) {
+          logger.debug(`Error from provider ${provider.name} on fallback: ${err?.message ?? err}`);
+        }
+      }
     }
   }
 
@@ -309,5 +332,6 @@ export const synco = Object.assign(
   }
 ) as SyncoCallable;
 
+export { cleanSearchQuery } from './utils.js';
 export const syncedlyrics = synco;
 export default synco;

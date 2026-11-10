@@ -66,12 +66,38 @@ export class Lrclib extends LRCProvider {
         if (direct && direct.synced) {
           return direct;
         }
+
+        // Clean title fallback for direct lookup (e.g. remove " - Remastered", "(feat. ...)", etc.)
+        const cleanTitle = title
+          .replace(/\s*[\(\[](?:feat\.?|ft\.?|with|featuring|official|video|audio|remaster|live|bonus|deluxe|radio|edit|acoustic)[^\)\]]*[\)\]]/gi, '')
+          .replace(/\s*-\s*(?:remaster|live|radio|acoustic|edit).*$/gi, '')
+          .trim();
+        if (cleanTitle && cleanTitle.toLowerCase() !== title.toLowerCase()) {
+          const directClean = await this.getLrcByArtistAndTitle(artist, cleanTitle);
+          if (directClean && directClean.synced) {
+            return directClean;
+          }
+        }
       }
     }
 
-    const data = await this.get<LrclibTrack[]>(Lrclib.SEARCH_ENDPOINT, {
+    let data = await this.get<LrclibTrack[]>(Lrclib.SEARCH_ENDPOINT, {
       params: { q: searchTerm },
     });
+
+    if (!data || !Array.isArray(data) || data.length === 0) {
+      // Fallback search with cleaned query if search term has extra noise
+      const cleanTerm = searchTerm
+        .replace(/\s*[\(\[](?:feat\.?|ft\.?|with|featuring|official|video|audio|remaster|live|bonus|deluxe|radio|edit|acoustic)[^\)\]]*[\)\]]/gi, '')
+        .replace(/\s*-\s*(?:remaster|live|radio|acoustic|edit).*$/gi, '')
+        .replace(/\s{2,}/g, ' ')
+        .trim();
+      if (cleanTerm && cleanTerm.toLowerCase() !== searchTerm.toLowerCase()) {
+        data = await this.get<LrclibTrack[]>(Lrclib.SEARCH_ENDPOINT, {
+          params: { q: cleanTerm },
+        });
+      }
+    }
 
     if (!data || !Array.isArray(data) || data.length === 0) {
       this.logger.debug(`No tracks found on Lrclib for "${searchTerm}"`);
@@ -84,7 +110,9 @@ export class Lrclib extends LRCProvider {
       (t) => `${t.artistName} - ${t.trackName}`
     );
 
-    const best = sorted[0];
+    // Prioritize candidates with synced lyrics first if available
+    const bestSynced = sorted.find((t) => Boolean(t.syncedLyrics && t.syncedLyrics.trim()));
+    const best = bestSynced || sorted[0];
     if (!best) return null;
 
     // If search result already contains lyrics, return them directly

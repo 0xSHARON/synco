@@ -149,19 +149,24 @@ async function getSpotifyWindows(): Promise<SpotifyTrack | null> {
     return mediaTrack;
   }
 
-  // 2. If winMedia is warming up on cold start, try a fast async check (up to 250ms)
+  // 2. Fast check: inspect Spotify window title via tasklist CSV (~150ms)
+  const tasklistTrack = getSpotifyWindowsTasklist();
+  if (tasklistTrack && tasklistTrack.title) {
+    return tasklistTrack;
+  }
+
+  // 3. If winMedia is warming up on cold start, wait for Windows Media Controls (up to 1500ms)
   try {
     const asyncTrack = await Promise.race([
-      winMedia.getTrackAsync(250),
-      new Promise<null>((r) => setTimeout(() => r(null), 250)),
+      winMedia.getTrackAsync(1500),
+      new Promise<null>((r) => setTimeout(() => r(null), 1500)),
     ]);
     if (asyncTrack && asyncTrack.title) {
       return asyncTrack;
     }
   } catch {}
 
-  // 3. Fast fallback: inspect Spotify window title via tasklist CSV (~300ms)
-  return getSpotifyWindowsTasklist();
+  return null;
 }
 
 /**

@@ -252,3 +252,29 @@ export class Logger {
     console.error(`[${this.context}] [ERROR]`, ...args);
   }
 }
+
+/**
+ * Sanitizes and normalizes track search queries by stripping noise
+ * such as feature tags, audio/video markers, remaster years, and extra brackets.
+ */
+export function cleanSearchQuery(query: string): string {
+  if (!query) return '';
+  return query
+    // Remove (feat. ...), [feat. ...], (with ...), [with ...]
+    .replace(/\s*[\(\[](?:feat\.?|ft\.?|with|featuring)[^\)\]]*[\)\]]/gi, '')
+    // Remove (Official Video), (Lyric Video), (Official Audio), [Music Video], etc.
+    .replace(/\s*[\(\[](?:official|lyric|audio|video|visualizer|clip)[^\)\]]*[\)\]]/gi, '')
+    // Remove (Remastered...), [Remastered...], - Remastered...
+    .replace(/\s*[\(\[]remaster(?:ed)?(?:\s+\d{4})?[^\)\]]*[\)\]]/gi, '')
+    .replace(/\s*-\s*remaster(?:ed)?(?:\s+\d{4})?.*$/gi, '')
+    // Remove (Live...), [Live...], - Live...
+    .replace(/\s*[\(\[]live(?:[^\)\]]*)?[\)\]]/gi, '')
+    .replace(/\s*-\s*live.*$/gi, '')
+    // Remove (Bonus Track), (Deluxe Edition), (Radio Edit), - Radio Edit
+    .replace(/\s*[\(\[](?:bonus\s+track|deluxe(?:\s+edition)?|radio\s+edit|acoustic(?:\s+version)?)[^\)\]]*[\)\]]/gi, '')
+    .replace(/\s*-\s*(?:radio\s+edit|acoustic).*$/gi, '')
+    // Clean up multiple spaces, trailing hyphens
+    .replace(/\s{2,}/g, ' ')
+    .replace(/\s*-\s*$/, '')
+    .trim();
+}
