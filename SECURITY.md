@@ -46,3 +46,4 @@ Please include:
 3. Affected versions
 
 We will acknowledge receipt within 24–48 hours, investigate promptly, and release a patch via a coordinated disclosure timeline.
+

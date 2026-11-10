@@ -1,17 +1,27 @@
 # synco 🎵
 
-> High-performance synchronized lyrics (.lrc) search and parsing engine for Node.js and the terminal.  
-> **Multi-provider fallback cascade**, **sub-second acoustic fuzzy matching**, and zero Python dependencies.
+> High-performance synchronized lyrics (.lrc) & karaoke engine for Node.js, TypeScript, and the terminal.  
+> **Multi-provider fallback cascade (LRCLIB, Musixmatch, Megalobiz, NetEase, Deezer, Genius, Lyricsify)**, **sub-second acoustic fuzzy matching**, **word-by-word karaoke timing**, and **zero Python dependencies**.
 
 <p align="left">
-  <a href="https://www.npmjs.com/package/@0xsharon/synco"><img src="https://img.shields.io/npm/v/@0xsharon/synco?color=18181b&style=flat-square&label=npm" alt="npm version" /></a>
-  <a href="https://github.com/0xSHARON/synco/packages"><img src="https://img.shields.io/badge/GitHub%20Packages-v1.0.0-18181b?style=flat-square&logo=github" alt="GitHub Packages" /></a>
-  <a href="https://bundlephobia.com/package/@0xsharon/synco"><img src="https://img.shields.io/bundlephobia/minzip/@0xsharon/synco?color=18181b&style=flat-square" alt="bundle size" /></a>
-  <a href="https://github.com/0xSHARON/synco/actions"><img src="https://img.shields.io/github/actions/workflow/status/0xSHARON/synco/ci.yml?branch=master&style=flat-square&label=CI&color=18181b" alt="CI Status" /></a>
-  <a href="./SECURITY.md"><img src="https://img.shields.io/badge/providers-7%20active-22c55e?style=flat-square" alt="7 Providers" /></a>
-  <a href="https://github.com/0xSHARON/synco/stargazers"><img src="https://img.shields.io/github/stars/0xSHARON/synco?style=flat-square&color=18181b" alt="stars" /></a>
-  <a href="https://socket.dev/npm/package/@0xsharon/synco"><img src="https://img.shields.io/badge/Socket-Security%20Verified-22c55e?style=flat-square" alt="Socket Verified" /></a>
-  <a href="./LICENSE"><img src="https://img.shields.io/npm/l/@0xsharon/synco?color=18181b&style=flat-square" alt="license" /></a>
+  <a href="https://www.npmjs.com/package/@0xsharon/synco"><img src="https://img.shields.io/npm/v/@0xsharon/synco?style=for-the-badge&logo=npm&color=CB3837&logoColor=white" alt="npm version" /></a>
+  <a href="https://github.com/0xSHARON/synco/packages"><img src="https://img.shields.io/badge/GitHub%20Packages-v1.0.0-%23121011.svg?style=for-the-badge&logo=github&logoColor=white" alt="GitHub Packages" /></a>
+  <a href="https://www.npmjs.com/package/@0xsharon/synco"><img src="https://img.shields.io/npm/dt/@0xsharon/synco?style=for-the-badge&color=22c55e&logo=npm&logoColor=white" alt="npm downloads" /></a>
+  <a href="https://github.com/0xSHARON/synco/stargazers"><img src="https://img.shields.io/github/stars/0xSHARON/synco?style=for-the-badge&color=E3B341&logo=github&logoColor=white" alt="GitHub Stars" /></a>
+  <a href="https://github.com/0xSHARON/synco/actions"><img src="https://img.shields.io/github/actions/workflow/status/0xSHARON/synco/ci.yml?branch=master&style=for-the-badge&logo=githubactions&logoColor=white&label=CI" alt="CI Status" /></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="license" /></a>
+</p>
+
+<p align="left">
+  <img src="https://img.shields.io/badge/typescript-%23007ACC.svg?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/node.js-6DA55F?style=for-the-badge&logo=node.js&logoColor=white" alt="Node.js" />
+  <img src="https://img.shields.io/badge/javascript-%23323330.svg?style=for-the-badge&logo=javascript&logoColor=%23F7DF1E" alt="JavaScript" />
+  <img src="https://img.shields.io/badge/Bun-%23000000.svg?style=for-the-badge&logo=bun&logoColor=white" alt="Bun" />
+  <img src="https://img.shields.io/badge/pnpm-%234a4a4a.svg?style=for-the-badge&logo=pnpm&logoColor=f69220" alt="pnpm" />
+  <img src="https://img.shields.io/badge/yarn-%232C8EBB.svg?style=for-the-badge&logo=yarn&logoColor=white" alt="Yarn" />
+  <img src="https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black" alt="Linux" />
+  <img src="https://img.shields.io/badge/mac%20os-000000?style=for-the-badge&logo=macos&logoColor=F0F0F0" alt="macOS" />
+  <img src="https://img.shields.io/badge/Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white" alt="Windows" />
 </p>
 
 ---
@@ -39,7 +49,7 @@ npx @0xsharon/synco "Queen - Bohemian Rhapsody" --synced-only
 
 ---
 
-## Why this exists
+## 🚀 Why Developers Choose synco
 
 Displaying time-synced lyrics in music streaming apps, audio players, Discord bots, and karaoke rigs should be effortless. But fetching accurate synchronized lyrics usually comes with frustrating hurdles:
 
@@ -47,15 +57,21 @@ Displaying time-synced lyrics in music streaming apps, audio players, Discord bo
 2. **Mismatched Tracks & Out-of-Sync Timestamps:** Naive string matching consistently fails on track titles with remixes, remaster years (`[2021 Remaster]`), featured artists, or punctuation differences. `synco` implements an optimized **token-set Indel fuzzy score** coupled with track duration tolerance gating (±2–4s) to guarantee timestamp accuracy.
 3. **Heavy Python & Native Binary Overhead:** Prior tools required Python runtime environments, virtualenvs, or native C-bindings. `synco` is built 100% in pure TypeScript for Node.js—engineered for instant execution in serverless lambdas, Discord music bots, electron apps, and CLI scripts.
 
-- **Dual Bundle:** Native ESM & CommonJS out of the box (`tsup`).
-- **Zero Python / Native Dependencies:** Runs anywhere Node.js 18+ runs.
-- **Multi-Provider Cascade:** LRCLIB, Megalobiz, Musixmatch, NetEase, Deezer, Genius, and Lyricsify.
-- **Sub-Second Fuzzy Matching:** Accurate track identification with duration verification.
-- **Enhanced Karaoke Mode:** Full word-by-word timestamp support (`<mm:ss.xx>`).
+### 📊 Feature Comparison
+
+| Feature | `synco` (`@0xsharon/synco`) | Python `syncedlyrics` | Basic Web Scrapers |
+| :--- | :---: | :---: | :---: |
+| **Runtime Environment** | **Node.js 18+, Bun, Deno** | Python 3.8+ required | Node.js |
+| **Multi-Provider Cascade** | **7 Providers (Auto-Failover)** | 5 Providers | 1 Provider (Fragile) |
+| **Fuzzy Matching Accuracy** | **RapidFuzz Token-Set + Duration Guard** | Basic Levenshtein | Exact Match (Fails often) |
+| **Word-by-Word Karaoke** | **Yes (`<mm:ss.xx>`)** | Limited | No |
+| **Dual ESM & CommonJS** | **Yes (`dist/index.mjs` & `.cjs`)** | N/A | Often CJS only |
+| **TypeScript Declarations** | **Included (`dist/index.d.ts`)** | No | Rare |
+| **Zero Python Overhead** | **100% Pure JS/TS** | No (pip / venv required) | Yes |
 
 ---
 
-## Architecture & Search Pipeline
+## 🏗️ Architecture & Search Pipeline
 
 Here is how `synco` discovers, scores, and delivers synchronized lyrics across multiple online providers:
 
@@ -88,7 +104,7 @@ Formatted .lrc File     Structured TypeScript Object
 
 ---
 
-## Provider Matrix & Capabilities
+## 📡 Provider Matrix & Capabilities
 
 `synco` ships with 7 built-in lyrics providers arranged in prioritized fallback order:
 
@@ -145,7 +161,7 @@ Dual ESM and CommonJS bundles are included out of the box with zero native compi
 
 ---
 
-## Quick Start
+## 💻 Quick Start
 
 ### 1. Terminal CLI Usage
 
@@ -267,9 +283,14 @@ const score = strScore('Creep (Acoustic)', 'Creep');
 
 ---
 
-## Framework & Bot Integrations
+## 🎧 Framework & Bot Integrations
 
 ### Discord.js / Lavalink Music Bot
+
+<p align="left">
+  <img src="https://img.shields.io/badge/Discord-%235865F2.svg?style=for-the-badge&logo=discord&logoColor=white" alt="Discord" />
+  <img src="https://img.shields.io/badge/Spotify-1ED760?style=for-the-badge&logo=spotify&logoColor=white" alt="Spotify" />
+</p>
 
 Display live synchronized lyrics in your Discord voice bot chat channels:
 
@@ -293,6 +314,10 @@ async function onTrackStart(channel: any, trackTitle: string, artist: string) {
 ```
 
 ### Express / Hono REST API
+
+<p align="left">
+  <img src="https://img.shields.io/badge/express.js-%23404d59.svg?style=for-the-badge&logo=express&logoColor=%2361DAFB" alt="Express.js" />
+</p>
 
 Build a microservice that exposes synchronized lyrics endpoints:
 
@@ -325,7 +350,7 @@ app.listen(3000, () => console.log('Lyrics API listening on port 3000'));
 
 ---
 
-## Complete API Reference
+## ⚙️ Complete API Reference
 
 ### `search(options)` / `synco(query, options)`
 
@@ -352,7 +377,7 @@ function search(options: SearchOptions | string): Promise<string | null>;
 
 ---
 
-## Engine Internals
+## 🔬 Engine Internals
 
 ### 1. Token-Set Fuzzy Matching & Duration Gating
 Online music catalogs often format identical tracks differently:
@@ -369,7 +394,7 @@ Network requests are guarded by abort controllers and isolated try-catch boundar
 
 ---
 
-## Local Development
+## 🛠️ Local Development
 
 If you'd like to contribute or experiment with new providers locally:
 
@@ -398,6 +423,8 @@ npm run dev
 
 ## 🌟 Star History
 
+If `synco` helped you fetch synchronized lyrics for your project, please consider giving it a star on GitHub! It helps other developers discover this package.
+
 <p align="center">
   <a href="https://star-history.com/#0xSHARON/synco&Date">
     <img src="https://api.star-history.com/svg?repos=0xSHARON/synco&type=Date&theme=dark" alt="synco Star History Chart" width="850" style="border-radius: 10px;" />
@@ -423,6 +450,7 @@ Please read our [Contributing Guide](./CONTRIBUTING.md) and [Security Policy](./
 ## 💖 Community & Support
 
 - ⭐ **Star this repository** on [GitHub](https://github.com/0xSHARON/synco) to support future providers and updates.
+- 📦 **View on npm**: [@0xsharon/synco](https://www.npmjs.com/package/@0xsharon/synco)
 - 📦 **View on GitHub Packages**: [@0xsharon/synco](https://github.com/0xSHARON/synco/packages)
 - 📮 **Submit feature requests or provider ideas** on [GitHub Issues](https://github.com/0xSHARON/synco/issues).
 - ☕ **Sponsor the developer** on [GitHub Sponsors](https://github.com/sponsors/0xSHARON).

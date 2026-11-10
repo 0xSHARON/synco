@@ -85,3 +85,4 @@ We welcome adding high-quality lyrics providers! When introducing a new provider
 ## Code of Conduct
 
 Please treat everyone in the community with respect, kindness, and professionalism.
+

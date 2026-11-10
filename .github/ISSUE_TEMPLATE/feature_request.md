@@ -17,3 +17,4 @@ A clear and concise description of any alternative solutions or workarounds you'
 
 **Additional Context**
 Add any provider API endpoints, sample lyrics URLs, or references here.
+
