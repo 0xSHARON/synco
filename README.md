@@ -1,11 +1,11 @@
 # synco 🎵
 
-> High-performance synchronized lyrics (.lrc) & karaoke engine for Node.js, TypeScript, and the terminal.  
-> **Multi-provider fallback cascade (LRCLIB, Musixmatch, Megalobiz, NetEase, Deezer, Genius, Lyricsify)**, **sub-second acoustic fuzzy matching**, **word-by-word karaoke timing**, and **zero Python dependencies**.
+> High-performance synchronized lyrics (.lrc) & animated karaoke engine for Node.js, TypeScript, and the terminal.  
+> **Real-time Spotify Auto-Sync**, **9 Visual Animation Themes**, **Live Equalizer Visualizer**, **Multi-provider fallback cascade (LRCLIB, Musixmatch, Megalobiz, NetEase, Deezer, Genius, Lyricsify)**, and **sub-second acoustic fuzzy matching**.
 
 <p align="left">
   <a href="https://www.npmjs.com/package/@0xsharon/synco"><img src="https://img.shields.io/npm/v/@0xsharon/synco?style=for-the-badge&logo=npm&color=CB3837&logoColor=white" alt="npm version" /></a>
-  <a href="https://github.com/0xSHARON/synco/packages"><img src="https://img.shields.io/badge/GitHub%20Packages-v1.0.0-%23121011.svg?style=for-the-badge&logo=github&logoColor=white" alt="GitHub Packages" /></a>
+  <a href="https://github.com/0xSHARON/synco/packages"><img src="https://img.shields.io/badge/GitHub%20Packages-v1.2.0-%23121011.svg?style=for-the-badge&logo=github&logoColor=white" alt="GitHub Packages" /></a>
   <a href="https://www.npmjs.com/package/@0xsharon/synco"><img src="https://img.shields.io/npm/dt/@0xsharon/synco?style=for-the-badge&color=22c55e&logo=npm&logoColor=white" alt="npm downloads" /></a>
   <a href="https://github.com/0xSHARON/synco/stargazers"><img src="https://img.shields.io/github/stars/0xSHARON/synco?style=for-the-badge&color=E3B341&logo=github&logoColor=white" alt="GitHub Stars" /></a>
   <a href="https://github.com/0xSHARON/synco/actions"><img src="https://img.shields.io/github/actions/workflow/status/0xSHARON/synco/ci.yml?branch=master&style=for-the-badge&logo=githubactions&logoColor=white&label=CI" alt="CI Status" /></a>
@@ -14,11 +14,10 @@
 
 <p align="left">
   <img src="https://img.shields.io/badge/typescript-%23007ACC.svg?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/Spotify-1ED760?style=for-the-badge&logo=spotify&logoColor=white" alt="Spotify" />
   <img src="https://img.shields.io/badge/node.js-6DA55F?style=for-the-badge&logo=node.js&logoColor=white" alt="Node.js" />
   <img src="https://img.shields.io/badge/javascript-%23323330.svg?style=for-the-badge&logo=javascript&logoColor=%23F7DF1E" alt="JavaScript" />
   <img src="https://img.shields.io/badge/Bun-%23000000.svg?style=for-the-badge&logo=bun&logoColor=white" alt="Bun" />
-  <img src="https://img.shields.io/badge/pnpm-%234a4a4a.svg?style=for-the-badge&logo=pnpm&logoColor=f69220" alt="pnpm" />
-  <img src="https://img.shields.io/badge/yarn-%232C8EBB.svg?style=for-the-badge&logo=yarn&logoColor=white" alt="Yarn" />
   <img src="https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black" alt="Linux" />
   <img src="https://img.shields.io/badge/mac%20os-000000?style=for-the-badge&logo=macos&logoColor=F0F0F0" alt="macOS" />
   <img src="https://img.shields.io/badge/Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white" alt="Windows" />
@@ -28,47 +27,91 @@
 
 ## ⚡ Interactive CLI & Quick Demo
 
-### 1. 🎤 Play Synchronized Lyrics Live in Your Terminal
+### 1. 🎧 Auto-Sync Lyrics with Spotify Desktop (`synco get`)
 
-Turn your terminal into a real-time karaoke screen with synchronized line and word-by-word highlighting:
+Simply start playing any song on Spotify (desktop app on Windows, macOS, or Linux) and run:
 
 ```bash
-# Play lyrics in real time directly in CLI:
-npx @0xsharon/synco play "Queen - Bohemian Rhapsody"
+# Auto-detects currently playing Spotify song & starts real-time synced lyrics:
+npx @0xsharon/synco get
 
-# Or use the --play (-P) flag with custom speed:
-npx @0xsharon/synco "Queen - Bohemian Rhapsody" --play --speed 1.25
-
-# Play an existing local .lrc file:
-npx @0xsharon/synco play ./my_song.lrc
+# Or pass a Spotify track URL directly:
+npx @0xsharon/synco get https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT
 ```
 
 ```
   ╭─────────────────────────────────────────────────────────────╮
-  │  🎵 SYNCO TERMINAL LYRICS PLAYER                            │
-  │  Track: "Bohemian Rhapsody" — Queen                         │
+  │  🎵 SYNCO PLAYER [NEON CYBER]             ▂▃▅▆▇█▇▆▅▃▂        │
+  │  Track: "Queen & Poet" — John Michael Howell                │
   │                                                             │
-  │  ⏱️  [ 01:14 / 05:54 ]  ━━━━━━●━━━━━━━━━━━━━━━━━━━  [1.0x]   │
+  │  ⏱️  [ 01:28 / 04:32 ]  ▰▰▰▰▰▰▰▰◈▱▱▱▱▱▱▱▱  [1.0x]             │
   ╰─────────────────────────────────────────────────────────────╯
 
-     Is this the real life?
-     Is this just fantasy?
-  🎤 ▶  CAUGHT IN A LANDSLIDE, NO ESCAPE FROM REALITY  ◀
-     Open your eyes, look up to the skies and see...
-     I'm just a poor boy, I need no sympathy
+     Against all hope
+     We found a way
+  ⚡ ▶  AND THERE'S A REASON NOW I SEE  ◀ ⚡
+     The reason I've been chosen
+     She sees the light inside of me
 
   ───────────────────────────────────────────────────────────────
-  [Space] Pause/Play  │  [←/→] Seek 5s  │  [+/-] Speed  │  [q] Quit
+  [Space] Pause │ [←/→] Seek 5s │ [+/-] Speed │ [t] Theme (neon) │ [q] Quit
 ```
 
-### 2. Search & Download `.lrc` Files
+> **Live Spotify Sync (`--sync`):** While running, `synco get` continuously follows your Spotify client. If you skip to the next song, `synco` automatically detects the change, retrieves the new lyrics, and continues streaming without interruption!
+
+---
+
+### 2. 🎨 9 Visual Animation Themes (`synco theme`)
+
+Custom visual personalities with animated audio equalizers and line styles:
+
+```bash
+# Showcase all 9 themes in terminal:
+npx @0xsharon/synco theme
+
+# Run live 5-second interactive animation preview of any theme:
+npx @0xsharon/synco theme neon
+npx @0xsharon/synco theme matrix
+npx @0xsharon/synco theme synthwave
+
+# Play any song with your favorite theme:
+npx @0xsharon/synco play "Bohemian Rhapsody" --theme matrix
+```
+
+| Theme | Badge | Style & Animation |
+| :--- | :--- | :--- |
+| **`neon`** *(Default)* | `[NEON CYBER]` | Electric cyan & hot magenta laser frames with glowing `⚡ ▶` |
+| **`matrix`** | `[SYS // MATRIX]` | Phosphor green terminal aesthetic with digital binary equalizer `[01] ❯` |
+| **`synthwave`** | `[RETRO // 80s]` | Sunset violet, coral amber, and retro arcade vibes `🌆 ▶` |
+| **`gradient`** | `[RAINBOW FLOW]` | Dynamic multi-color chromatic spectrum flowing through lyrics `🌈 ❯` |
+| **`minimal`** | `[MINIMAL]` | Clean monochrome high-contrast pure white and slate `●` |
+| **`karaoke`** | `[KARAOKE PARTY]` | Bouncing ball rhythm indicator `●` with glowing gold highlights `🎤 ❯` |
+| **`dracula`** | `[DRACULA]` | Classic Dracula palette: purple, pink, cyan, and spring green `🧛 ▶` |
+| **`ocean`** | `[ARCTIC OCEAN]` | Deep Arctic glacier frost cyan, ocean blue, and icy chill `❄️ ❯` |
+| **`classic`** | `[SYNCO]` | Standard balanced cyan & emerald green terminal interface `🎤 ▶` |
+
+> 💡 **On-the-fly Switching:** Press <kbd>t</kbd> on your keyboard at any moment during playback to instantly cycle through all themes!
+
+---
+
+### 3. 🎤 Play Any Song or Local `.lrc` File
+
+```bash
+# Play any song by name with custom speed:
+npx @0xsharon/synco play "The Weeknd - Blinding Lights" --speed 1.25
+
+# Play a local .lrc file:
+npx @0xsharon/synco play ./my_song.lrc
+```
+
+### 4. Search & Download `.lrc` Files
 
 ```bash
 npx @0xsharon/synco "Queen - Bohemian Rhapsody" --synced-only
 ```
 
 ```
-  🎵 synco v1.1.0
+  🎵 synco v1.2.0
   ✔ Query: "Queen - Bohemian Rhapsody"
   ✔ Match: "Bohemian Rhapsody" by Queen (Score: 100%, Duration: 05:54)
   ✔ Provider: LRCLIB (latency: 142ms)
@@ -199,63 +242,81 @@ Dual ESM and CommonJS bundles are included out of the box with zero native compi
 ### 1. Terminal CLI Usage
 
 ```bash
-# 🎤 Play synchronized lyrics in real time directly in your terminal:
+# 🎧 Auto-detect Spotify currently playing track & stream synced lyrics:
+synco get
+
+# 🎧 Follow Spotify desktop live (auto-switches lyrics when song changes on Spotify):
+synco get --sync
+
+# 🎨 Stream with a specific theme (e.g. matrix, synthwave, gradient, karaoke):
+synco get --theme matrix
+
+# 🎨 Browse & preview all 9 terminal themes:
+synco theme
+synco theme neon
+synco theme synthwave
+
+# 🎤 Play synchronized lyrics for any song query:
 synco play "Queen - Bohemian Rhapsody"
 
-# Or use the -P / --play flag on any search term:
-synco "Blinding Lights The Weeknd" -P
+# 🔗 Fetch lyrics from a Spotify track URL:
+synco get https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT
 
-# Play an existing local .lrc file at 1.5x speed:
-synco ./my_song.lrc --play --speed 1.5
+# 📁 Play an existing local .lrc file at 1.5x speed:
+synco play ./my_song.lrc --speed 1.5
 
-# Basic search & download (saves to "{search_term}.lrc" by default)
-synco "Bohemian Rhapsody Queen"
-
-# Save to a specific file path
-synco "Blinding Lights The Weeknd" -o "blinding_lights.lrc"
+# 💾 Download and save to .lrc without launching player:
+synco get "Bohemian Rhapsody Queen" --no-play -o "./lyrics.lrc"
 
 # Query specific providers only
 synco "bad guy billie eilish" -p lrclib megalobiz
 
-# Force synchronized lyrics only (skip plaintext results)
-synco "Shape of You Ed Sheeran" --synced-only
-
 # Word-by-word karaoke timing format (<mm:ss.xx>)
 synco "Starboy The Weeknd" --enhanced
-
-# Enable verbose network logs
-synco "Hotel California Eagles" -v
 ```
 
 #### 🎮 Terminal Player Interactive Controls
 
-When running in interactive mode (`synco play` or `--play`), the terminal responds to live keystrokes:
+When running in interactive mode (`synco get`, `synco play`, or `synco <song> --play`), the terminal responds to live keystrokes:
 
 | Key | Action |
 | :--- | :--- |
 | **`[Space]`** or **`k`** | Toggle Pause / Resume playback |
+| **`[t]`** | **Cycle to the next visual theme live on the fly** |
 | **`[→]`** or **`l`** | Seek forward 5 seconds |
 | **`[←]`** or **`h`** | Seek backward 5 seconds |
 | **`[+]`** or **`↑`** | Increase playback speed (+0.25x) |
 | **`[-]`** or **`↓`** | Decrease playback speed (-0.25x) |
 | **`[q]`** or **`Ctrl+C`** | Gracefully quit player and restore terminal cursor |
 
-#### CLI Command-Line Options
+#### CLI Commands & Sub-commands
+
+| Command | Description |
+| :--- | :--- |
+| `synco get [track_or_url]` | Auto-syncs from local Spotify, resolves Spotify URL, or queries lyrics with live sync |
+| `synco theme [name]` | Lists all 9 animation themes or runs a live 5s interactive preview |
+| `synco play <song>` | Directly streams and plays synchronized lyrics in the terminal |
+| `synco <search_term>` | General search with `-P/--play`, `--output`, and provider filters |
+
+#### CLI Options & Flags
 
 | Flag | Short | Description | Default |
 | :--- | :--- | :--- | :--- |
+| `-t, --theme <name>` | `-t` | Visual theme (`neon`, `matrix`, `synthwave`, `gradient`, `minimal`, `karaoke`, `dracula`, `ocean`, `classic`) | `'neon'` |
+| `-s, --sync` | `-s` | Continuously sync playback and track changes with Spotify desktop | `true` |
+| `--speed <multiplier>` | | Playback speed multiplier (e.g. `1.0`, `1.5`, `2.0`) | `1.0` |
+| `--no-play` | | Print or save lyrics without opening interactive terminal player | `false` |
 | `-P, --play` | `-P` | Stream and play synchronized lyrics in real time in the terminal | `false` |
-| `--speed <num>` | | Playback speed multiplier (e.g. `1.0`, `1.5`, `2.0`) | `1.0` |
-| `--output <path>` | `-o` | Output file path (`{search_term}` is replaced dynamically) | `"{search_term}.lrc"` |
-| `--providers <list...>` | `-p` | Space-separated list of providers to search | *all available* |
-| `--lang <code>` | `-l` | Translation language code (e.g., `es`, `de`, `fr`) | `undefined` |
-| `--synced-only` | `-s` | Only look for synced `.lrc` lyrics | `false` |
-| `--plain-only` | `-u` | Only look for plain text lyrics | `false` |
+| `-o, --output <path>` | `-o` | Output file path (`{search_term}` is replaced dynamically) | `"{search_term}.lrc"` |
+| `-p, --providers <list...>` | `-p` | Space-separated list of providers to search | *all available* |
+| `-l, --lang <code>` | `-l` | Translation language code (e.g., `es`, `de`, `fr`) | `undefined` |
+| `--synced-only` | | Only look for synced `.lrc` lyrics | `false` |
+| `--plain-only` | | Only look for plain text lyrics | `false` |
 | `--enhanced` | | Word-by-word karaoke synchronized lyrics | `false` |
 | `--token <token>` | | Optional custom Musixmatch user token | `undefined` |
-| `--verbose` | `-v` | Output debug diagnostic logs to stderr | `false` |
-| `--version` | `-V` | Output version number | |
-| `--help` | `-h` | Display help screen | |
+| `-v, --verbose` | `-v` | Output debug diagnostic logs to stderr | `false` |
+| `-V, --version` | `-V` | Output version number | |
+| `-h, --help` | `-h` | Display help screen | |
 
 ---
 
@@ -264,23 +325,42 @@ When running in interactive mode (`synco play` or `--play`), the terminal respon
 #### TypeScript / ES Modules (`import`)
 
 ```typescript
-import synco, { search, playLyrics, parseLrc } from '@0xsharon/synco';
+import synco, {
+  search,
+  playLyrics,
+  parseLrc,
+  getSpotifyCurrentTrack,
+  resolveSpotifyUrl,
+  getTheme,
+  listThemes
+} from '@0xsharon/synco';
 
-// Basic search (returns LRC string or null)
-const lrc = await search('Queen - Bohemian Rhapsody');
-console.log(lrc);
+// 1. Detect currently playing song on Spotify (Windows, macOS, Linux)
+const spotifyTrack = await getSpotifyCurrentTrack();
+if (spotifyTrack) {
+  console.log(`Currently playing on Spotify: ${spotifyTrack.title} by ${spotifyTrack.artist}`);
+  
+  // 2. Search lyrics
+  const lrc = await synco(spotifyTrack.query);
+  if (lrc) {
+    // 3. Play with custom theme & Spotify sync
+    await playLyrics(lrc, {
+      theme: 'matrix',
+      syncSpotify: true,
+      title: spotifyTrack.title,
+      artist: spotifyTrack.artist,
+    });
+  }
+}
 
-// Or call default export directly
-const lyrics = await synco('Hotel California Eagles');
+// 4. Resolve Spotify URL without any API keys
+const resolved = await resolveSpotifyUrl('https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT');
+console.log(resolved?.query); // => "Rick Astley - Never Gonna Give You Up"
 
-// 🎤 Play synchronized lyrics directly from Node.js
-await synco.play('Queen - Bohemian Rhapsody');
-
-// Or parse LRC into structured lines and timestamps
-const { metadata, lines } = parseLrc(lrc);
-console.log(lines[0]);
-// => { timeSeconds: 0.67, rawTime: '[00:00.67]', text: 'Is this the real life?' }
-```
+// 5. Inspect available themes
+const themes = listThemes();
+console.log(themes.map(t => t.name));
+// => ['neon', 'matrix', 'synthwave', 'gradient', 'minimal', 'karaoke', 'dracula', 'ocean', 'classic']
 ```
 
 #### CommonJS (`require`)
@@ -289,6 +369,10 @@ console.log(lines[0]);
 const synco = require('@0xsharon/synco');
 
 async function main() {
+  const current = await synco.getSpotifyCurrentTrack();
+  if (current) {
+    console.log('Playing on Spotify:', current.query);
+  }
   const lrc = await synco.search('Blinding Lights The Weeknd');
   console.log(lrc);
 }

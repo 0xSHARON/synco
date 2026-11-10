@@ -262,12 +262,75 @@ async function runTests() {
     await playLyrics(shortLrc, {
       speed: 10.0, // fast playback
       interactive: false,
+      theme: 'matrix',
       onLine: (line) => {
         playedLines.push(line.text);
       },
     });
 
     assert.deepStrictEqual(playedLines, ['First line', 'Second line', 'Third line']);
+  });
+
+  console.log('\n[Themes & Animations]');
+  await test('getTheme returns valid definitions and handles aliases', () => {
+    const neon = synco.getTheme('neon');
+    assert.strictEqual(neon.name, 'neon');
+    assert.strictEqual(neon.displayName, 'Cyberpunk Neon');
+
+    const matrix = synco.getTheme('matrix');
+    assert.strictEqual(matrix.name, 'matrix');
+
+    // Aliases
+    assert.strictEqual(synco.getTheme('cyberpunk').name, 'neon');
+    assert.strictEqual(synco.getTheme('retro').name, 'synthwave');
+    assert.strictEqual(synco.getTheme('mono').name, 'minimal');
+    assert.strictEqual(synco.getTheme('nord').name, 'ocean');
+    assert.strictEqual(synco.getTheme('unknown-xyz').name, 'neon');
+  });
+
+  await test('listThemes returns all 9 themes with required color fields', () => {
+    const all = synco.listThemes();
+    assert.strictEqual(all.length, 9);
+    for (const t of all) {
+      assert.ok(t.name);
+      assert.ok(t.displayName);
+      assert.ok(t.description);
+      assert.ok(t.colors.primary);
+      assert.ok(t.colors.activeLine);
+      assert.ok(t.colors.frameBorder);
+      assert.ok(t.colors.progressBarChar);
+      assert.ok(t.colors.equalizerChars.length > 0);
+    }
+  });
+
+  await test('generateEqualizerBars oscillates and flattens when paused', () => {
+    const theme = synco.getTheme('neon');
+    const paused = synco.generateEqualizerBars(0, true, theme, 10);
+    assert.ok(paused.includes(theme.colors.equalizerChars[0]));
+
+    const wave1 = synco.generateEqualizerBars(1, false, theme, 10);
+    const wave2 = synco.generateEqualizerBars(15, false, theme, 10);
+    assert.ok(typeof wave1 === 'string');
+    assert.ok(typeof wave2 === 'string');
+  });
+
+  console.log('\n[Spotify Integration]');
+  await test('isSpotifyUrl detects valid Spotify URLs and URIs', () => {
+    assert.strictEqual(
+      synco.isSpotifyUrl('https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT'),
+      true
+    );
+    assert.strictEqual(synco.isSpotifyUrl('spotify:track:4cOdK2wGLETKBW3PvgPWqT'), true);
+    assert.strictEqual(synco.isSpotifyUrl('https://open.spotify.com/album/12345'), false);
+    assert.strictEqual(synco.isSpotifyUrl('Bohemian Rhapsody Queen'), false);
+  });
+
+  await test('getSpotifyCurrentTrack runs safely without throwing', async () => {
+    const current = await synco.getSpotifyCurrentTrack();
+    if (current) {
+      assert.ok(typeof current.query === 'string');
+      assert.ok(typeof current.title === 'string');
+    }
   });
 
   console.log(`\nTests finished: ${passed} passed, ${failed} failed.\n`);

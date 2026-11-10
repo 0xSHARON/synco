@@ -21,10 +21,30 @@ import {
   type ParsedLrc,
 } from './player.js';
 
+import {
+  getTheme,
+  listThemes,
+  generateEqualizerBars,
+  THEMES,
+  type ThemeDefinition,
+  type ThemeName,
+  type AnimationType,
+} from './themes.js';
+
+import {
+  getSpotifyCurrentTrack,
+  resolveSpotifyUrl,
+  isSpotifyUrl,
+  watchSpotify,
+  type SpotifyTrack,
+} from './spotify.js';
+
 export * from './types.js';
 export * from './lyrics.js';
 export * from './utils.js';
 export * from './player.js';
+export * from './themes.js';
+export * from './spotify.js';
 export * from './providers/index.js';
 
 /**
@@ -52,131 +72,158 @@ export async function search(
   lang?: string,
   enhanced?: boolean
 ): Promise<string | null> {
-  const options: SearchOptions =
-    typeof optOrPlainOnly === 'object' && optOrPlainOnly !== null
-      ? optOrPlainOnly
-      : {
-          plainOnly: Boolean(optOrPlainOnly),
-          syncedOnly: Boolean(syncedOnly),
-          savePath,
-          providers,
-          lang,
-          enhanced: Boolean(enhanced),
-        };
+  let opts: SearchOptions = {};
 
-  const logger = new Logger('synco', Boolean(options.verbose));
+  if (typeof optOrPlainOnly === 'object' && optOrPlainOnly !== null) {
+    opts = { ...optOrPlainOnly };
+  } else {
+    opts = {
+      plainOnly: typeof optOrPlainOnly === 'boolean' ? optOrPlainOnly : false,
+      syncedOnly: typeof syncedOnly === 'boolean' ? syncedOnly : false,
+      savePath,
+      providers,
+      lang,
+      enhanced,
+    };
+  }
 
-  if (options.plainOnly && options.syncedOnly) {
+  const logger = new Logger('synco', opts.verbose ?? false);
+
+  if (opts.plainOnly && opts.syncedOnly) {
     logger.error('--plain-only and --synced-only flags cannot be used together.');
     return null;
   }
 
-  let targetType = TargetType.PREFER_SYNCED;
-  if (options.plainOnly) {
-    targetType = TargetType.PLAINTEXT;
-  } else if (options.syncedOnly) {
-    targetType = TargetType.SYNCED_ONLY;
+  // Handle Spotify URL if passed as searchTerm
+  let effectiveSearchTerm = searchTerm;
+  if (isSpotifyUrl(searchTerm)) {
+    logger.debug(`Resolving Spotify link: ${searchTerm}`);
+    const resolved = await resolveSpotifyUrl(searchTerm);
+    if (resolved && resolved.query) {
+      effectiveSearchTerm = resolved.query;
+      logger.debug(`Resolved Spotify track: "${effectiveSearchTerm}"`);
+    }
   }
 
-  const lyrics = new Lyrics();
+  let targetType = TargetType.PREFER_SYNCED;
+  if (opts.syncedOnly) {
+    targetType = TargetType.SYNCED_ONLY;
+  } else if (opts.plainOnly) {
+    targetType = TargetType.PLAINTEXT;
+  }
 
-  const providerInstances: ILRCProvider[] = [
-    new Musixmatch({
-      lang: options.lang,
-      enhanced: options.enhanced,
-      musixmatchToken: options.musixmatchToken,
-      timeoutMs: options.timeoutMs,
-      verbose: options.verbose,
-    }),
-    new Lrclib({
-      timeoutMs: options.timeoutMs,
-      verbose: options.verbose,
-    }),
-    new NetEase({
-      timeoutMs: options.timeoutMs,
-      verbose: options.verbose,
-    }),
-    new Megalobiz({
-      timeoutMs: options.timeoutMs,
-      verbose: options.verbose,
-    }),
-    new Genius({
-      timeoutMs: options.timeoutMs,
-      verbose: options.verbose,
-    }),
+  // Determine provider list
+  const providerInstances: ILRCProvider[] = [];
+  const requestedProviders = opts.providers?.map((p) => p.toLowerCase());
+
+  const availableProviders: Array<{ name: string; create: () => ILRCProvider }> = [
+    {
+      name: 'lrclib',
+      create: () => new Lrclib({ lang: opts.lang, enhanced: opts.enhanced, timeoutMs: opts.timeoutMs, verbose: opts.verbose }),
+    },
+    {
+      name: 'megalobiz',
+      create: () => new Megalobiz({ lang: opts.lang, timeoutMs: opts.timeoutMs, verbose: opts.verbose }),
+    },
+    {
+      name: 'musixmatch',
+      create: () =>
+        new Musixmatch({
+          lang: opts.lang,
+          enhanced: opts.enhanced,
+          musixmatchToken: opts.musixmatchToken,
+          timeoutMs: opts.timeoutMs,
+          verbose: opts.verbose,
+        }),
+    },
+    {
+      name: 'netease',
+      create: () => new NetEase({ lang: opts.lang, timeoutMs: opts.timeoutMs, verbose: opts.verbose }),
+    },
+    {
+      name: 'genius',
+      create: () => new Genius({ lang: opts.lang, timeoutMs: opts.timeoutMs, verbose: opts.verbose }),
+    },
+    {
+      name: 'deezer',
+      create: () => new Deezer({ lang: opts.lang, timeoutMs: opts.timeoutMs, verbose: opts.verbose }),
+    },
+    {
+      name: 'lyricsify',
+      create: () => new Lyricsify({ lang: opts.lang, timeoutMs: opts.timeoutMs, verbose: opts.verbose }),
+    },
   ];
 
-  const selectedProviders = selectProviders(providerInstances, options.providers, logger);
+  if (requestedProviders && requestedProviders.length > 0) {
+    for (const req of requestedProviders) {
+      const match = availableProviders.find((p) => p.name === req);
+      if (match) {
+        providerInstances.push(match.create());
+      } else {
+        logger.warn(`Provider '${req}' not recognized. Ignoring.`);
+      }
+    }
+  } else {
+    // Default providers in order of speed and accuracy
+    const defaultList = ['lrclib', 'megalobiz', 'musixmatch', 'netease', 'genius'];
+    for (const name of defaultList) {
+      const match = availableProviders.find((p) => p.name === name);
+      if (match) {
+        providerInstances.push(match.create());
+      }
+    }
+  }
 
-  for (const provider of selectedProviders) {
-    logger.debug(`Looking for an LRC on ${provider.name}`);
+  logger.debug(`Searching for "${effectiveSearchTerm}" with target=${targetType}`);
+
+  const combinedLyrics = new Lyrics();
+
+  for (const provider of providerInstances) {
     try {
-      const result = await provider.getLrc(searchTerm);
-      if (result) {
-        lyrics.update(result);
+      logger.debug(`Checking provider: ${provider.name}`);
+      const lrc = await provider.getLrc(effectiveSearchTerm);
+      if (lrc) {
+        combinedLyrics.update(lrc);
+        if (combinedLyrics.isPreferred(targetType)) {
+          logger.debug(`Found preferred lyrics from: ${provider.name}`);
+          break;
+        }
       }
     } catch (err: any) {
-      logger.error(`An error occurred while searching for an LRC on ${provider.name}:`, err?.message ?? err);
-      if (options.lang) {
-        logger.error('Aborting, since `lang` is only supported by Musixmatch');
-        return null;
-      }
-      continue;
-    }
-
-    if (lyrics.isPreferred(targetType)) {
-      logger.info(`Lyrics found for "${searchTerm}" on ${provider.name}`);
-      break;
-    } else if (lyrics.isAcceptable(targetType)) {
-      logger.info(`Found plaintext lyrics on ${provider.name}, but continuing search for synced lyrics`);
-    } else {
-      logger.debug(`No suitable lyrics found on ${provider.name}, continuing search...`);
+      logger.debug(`Error from provider ${provider.name}: ${err?.message ?? err}`);
     }
   }
 
-  if (!lyrics.isAcceptable(targetType)) {
-    logger.info(`No suitable lyrics found for "${searchTerm}" :(`);
-    return null;
+  const result = combinedLyrics.toStr(targetType);
+
+  if (result && opts.savePath) {
+    const finalPath = opts.savePath.replace('{search_term}', effectiveSearchTerm);
+    try {
+      await combinedLyrics.saveLrcFile(finalPath, targetType);
+      logger.debug(`Saved lyrics to: ${finalPath}`);
+    } catch (err: any) {
+      logger.error(`Failed to save lyrics file: ${err?.message ?? err}`);
+    }
   }
 
-  if (options.savePath) {
-    const formattedPath = options.savePath.replace(/{search_term}/g, searchTerm);
-    await lyrics.saveLrcFile(formattedPath, targetType);
-  }
-
-  return lyrics.toStr(targetType);
+  return result;
 }
 
-function selectProviders(
-  allProviders: ILRCProvider[],
-  requestedNames?: string[],
-  logger?: Logger
-): ILRCProvider[] {
-  if (!requestedNames || requestedNames.length === 0) {
-    return allProviders;
-  }
-
-  const lookup = new Set(requestedNames.map((name) => name.toLowerCase().trim()));
-  const filtered = allProviders.filter((p) => lookup.has(p.name.toLowerCase()));
-
-  if (filtered.length === 0) {
-    logger?.error(
-      `Providers [${requestedNames.join(', ')}] not found in the list of available providers.`
-    );
-    return [];
-  }
-
-  return filtered;
-}
-
-// Support callable default export as well as object properties
-export interface SyncoCallable {
+export type SyncoCallable = {
   (searchTerm: string, options?: SearchOptions): Promise<string | null>;
   search: typeof search;
   play: typeof playLyrics;
   playLyrics: typeof playLyrics;
   parseLrc: typeof parseLrc;
   parseTimeTag: typeof parseTimeTag;
+  getTheme: typeof getTheme;
+  listThemes: typeof listThemes;
+  generateEqualizerBars: typeof generateEqualizerBars;
+  getSpotifyCurrentTrack: typeof getSpotifyCurrentTrack;
+  resolveSpotifyUrl: typeof resolveSpotifyUrl;
+  isSpotifyUrl: typeof isSpotifyUrl;
+  watchSpotify: typeof watchSpotify;
+  THEMES: typeof THEMES;
   Lyrics: typeof Lyrics;
   TargetType: typeof TargetType;
   LRCProvider: typeof LRCProvider;
@@ -187,7 +234,7 @@ export interface SyncoCallable {
   Genius: typeof Genius;
   Deezer: typeof Deezer;
   Lyricsify: typeof Lyricsify;
-}
+};
 
 export const synco = Object.assign(
   function (searchTerm: string, options?: SearchOptions) {
@@ -199,6 +246,14 @@ export const synco = Object.assign(
     playLyrics,
     parseLrc,
     parseTimeTag,
+    getTheme,
+    listThemes,
+    generateEqualizerBars,
+    getSpotifyCurrentTrack,
+    resolveSpotifyUrl,
+    isSpotifyUrl,
+    watchSpotify,
+    THEMES,
     Lyrics,
     TargetType,
     LRCProvider,
@@ -214,4 +269,3 @@ export const synco = Object.assign(
 
 export const syncedlyrics = synco;
 export default synco;
-

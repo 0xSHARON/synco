@@ -6,6 +6,9 @@ export enum TargetType {
 
 export type LyricsType = 'synced' | 'plaintext' | 'invalid';
 
+export type { ThemeName, AnimationType, ThemeDefinition, ThemeColors } from './themes.js';
+export type { SpotifyTrack } from './spotify.js';
+
 export interface SearchOptions {
   /** Only look for plain text (not synced) lyrics */
   plainOnly?: boolean;

@@ -1,5 +1,14 @@
 import readline from 'node:readline';
 import { formatTime } from './utils.js';
+import {
+  getTheme,
+  listThemes,
+  generateEqualizerBars,
+  type ThemeDefinition,
+  type ThemeName,
+  type AnimationType,
+} from './themes.js';
+import { getSpotifyCurrentTrack, type SpotifyTrack } from './spotify.js';
 
 export interface WordTag {
   timeSeconds: number;
@@ -32,6 +41,12 @@ export interface PlayerOptions {
   speed?: number;
   /** Whether to enable full interactive TTY UI (default: true if stdout is a TTY) */
   interactive?: boolean;
+  /** Visual theme name (e.g. 'neon', 'matrix', 'synthwave', 'karaoke', etc.) or theme object */
+  theme?: ThemeName | ThemeDefinition | string;
+  /** Animation style override */
+  animation?: AnimationType;
+  /** Continuously sync with Spotify playback */
+  syncSpotify?: boolean;
   /** Custom track title override */
   title?: string;
   /** Custom track artist override */
@@ -44,6 +59,8 @@ export interface PlayerOptions {
   onLine?: (line: PlayableLine, index: number) => void;
   /** Callback fired on each tick with current playback timestamp in seconds */
   onTick?: (currentTime: number, activeIndex: number) => void;
+  /** Callback fired when Spotify switches to another track during playback */
+  onSpotifyTrackChange?: (track: SpotifyTrack) => void;
 }
 
 /**
@@ -102,7 +119,6 @@ export function parseLrc(lrcText: string): ParsedLrc {
 
     // Check for word-by-word karaoke timing (<mm:ss.xx> word)
     const words: WordTag[] = [];
-    let wordMatch: RegExpExecArray | null;
     const cleanWordMatches = [...textWithoutTimeTags.matchAll(wordRegex)];
 
     let displayText = textWithoutTimeTags;
@@ -149,7 +165,7 @@ export function parseLrc(lrcText: string): ParsedLrc {
 }
 
 /**
- * Real-time CLI interactive lyrics player.
+ * Real-time CLI interactive lyrics player with themes, animations, and Spotify sync.
  */
 export async function playLyrics(lrcText: string, options: PlayerOptions = {}): Promise<void> {
   const { metadata, lines } = parseLrc(lrcText);
@@ -166,29 +182,25 @@ export async function playLyrics(lrcText: string, options: PlayerOptions = {}): 
   let isPaused = false;
   let lastActiveIndex = -2;
   let isExited = false;
+  let tickCount = 0;
 
-  const trackTitle = options.title || metadata.title || 'Unknown Track';
-  const trackArtist = options.artist || metadata.artist || '';
+  // Themes list for dynamic cycle switching via 't' key
+  const allThemes = listThemes();
+  let currentTheme: ThemeDefinition =
+    typeof options.theme === 'object' && options.theme !== null
+      ? (options.theme as ThemeDefinition)
+      : getTheme(typeof options.theme === 'string' ? options.theme : undefined);
 
-  // ANSI Styles
+  let themeIndex = allThemes.findIndex((t) => t.name === currentTheme.name);
+  if (themeIndex === -1) themeIndex = 0;
+
+  let trackTitle = options.title || metadata.title || 'Unknown Track';
+  let trackArtist = options.artist || metadata.artist || '';
+
   const c = {
-    reset: '\x1b[0m',
-    bold: '\x1b[1m',
-    dim: '\x1b[2m',
-    cyan: '\x1b[36m',
-    brightCyan: '\x1b[96m',
-    green: '\x1b[32m',
-    brightGreen: '\x1b[92m',
-    yellow: '\x1b[33m',
-    brightYellow: '\x1b[93m',
-    magenta: '\x1b[35m',
-    gray: '\x1b[90m',
-    white: '\x1b[37m',
     clearScreen: '\x1b[2J\x1b[H',
     hideCursor: '\x1b[?25l',
     showCursor: '\x1b[?25h',
-    enterAltScreen: '\x1b[?1049h',
-    exitAltScreen: '\x1b[?1049l',
   };
 
   // Helper to render interactive TTY frame
@@ -197,29 +209,54 @@ export async function playLyrics(lrcText: string, options: PlayerOptions = {}): 
 
     const termWidth = process.stdout.columns || 80;
     const boxWidth = Math.min(termWidth - 4, 76);
+    const th = currentTheme;
+    const colors = th.colors;
+    const border = colors.frameBorder;
+
+    // Equalizer animation
+    const eqBars = generateEqualizerBars(tickCount, isPaused, th, 14);
 
     // Progress bar calculations
     const pct = Math.min(1, Math.max(0, playbackPos / (totalDuration || 1)));
-    const barWidth = 26;
+    const barWidth = 24;
     const filled = Math.round(pct * barWidth);
-    const bar = '━'.repeat(Math.max(0, filled)) + (filled < barWidth ? '●' : '━') + '─'.repeat(Math.max(0, barWidth - filled - 1));
+    const { filled: fChar, playhead: pChar, empty: eChar } = colors.progressBarChar;
+    const bar =
+      colors.progressFilled +
+      fChar.repeat(Math.max(0, filled)) +
+      (filled < barWidth ? pChar : fChar) +
+      colors.progressEmpty +
+      eChar.repeat(Math.max(0, barWidth - filled - 1)) +
+      colors.reset;
 
     let frame = '';
     frame += c.clearScreen;
-    frame += `\n  ${c.cyan}╭${'─'.repeat(boxWidth)}╮${c.reset}\n`;
-    frame += `  ${c.cyan}│${c.reset}  ${c.bold}🎵 SYNCO TERMINAL LYRICS PLAYER${c.reset}${' '.repeat(Math.max(0, boxWidth - 32))} ${c.cyan}│${c.reset}\n`;
 
+    // Top border
+    frame += `\n  ${colors.primary}${border.topLeft}${border.horizontal.repeat(boxWidth)}${border.topRight}${colors.reset}\n`;
+
+    // Header with Equalizer & Badge
+    const headerTitle = `🎵 SYNCO PLAYER ${colors.badge}`;
+    const headerPlain = `🎵 SYNCO PLAYER [${th.displayName}]`;
+    const spaceAfterHeader = Math.max(2, boxWidth - headerPlain.length - 18);
+    frame += `  ${colors.primary}${border.vertical}${colors.reset}  ${colors.bold}${headerTitle}${colors.reset}${' '.repeat(spaceAfterHeader)}${eqBars}  ${colors.primary}${border.vertical}${colors.reset}\n`;
+
+    // Track Title line
     const titleStr = `Track: "${trackTitle}"${trackArtist ? ` — ${trackArtist}` : ''}`;
     const truncatedTitle = titleStr.length > boxWidth - 4 ? titleStr.slice(0, boxWidth - 7) + '...' : titleStr;
-    frame += `  ${c.cyan}│${c.reset}  ${c.gray}${truncatedTitle}${c.reset}${' '.repeat(Math.max(0, boxWidth - truncatedTitle.length - 2))} ${c.cyan}│${c.reset}\n`;
+    frame += `  ${colors.primary}${border.vertical}${colors.reset}  ${colors.secondary}${truncatedTitle}${colors.reset}${' '.repeat(Math.max(0, boxWidth - truncatedTitle.length - 2))} ${colors.primary}${border.vertical}${colors.reset}\n`;
 
-    frame += `  ${c.cyan}│${c.reset}${' '.repeat(boxWidth)} ${c.cyan}│${c.reset}\n`;
+    // Spacer
+    frame += `  ${colors.primary}${border.vertical}${colors.reset}${' '.repeat(boxWidth)} ${colors.primary}${border.vertical}${colors.reset}\n`;
 
-    const timeStr = `⏱️  [ ${formatTime(playbackPos)} / ${formatTime(totalDuration)} ]  ${c.green}${bar}${c.reset}  [${speed.toFixed(1)}x]${isPaused ? ` ${c.brightYellow}⏸ PAUSED${c.reset}` : ''}`;
-    // Strip ansi for length
-    const timePlainLength = `⏱️  [ ${formatTime(playbackPos)} / ${formatTime(totalDuration)} ]  ${bar}  [${speed.toFixed(1)}x]${isPaused ? ' ⏸ PAUSED' : ''}`.length;
-    frame += `  ${c.cyan}│${c.reset}  ${timeStr}${' '.repeat(Math.max(0, boxWidth - timePlainLength - 2))} ${c.cyan}│${c.reset}\n`;
-    frame += `  ${c.cyan}╰${'─'.repeat(boxWidth)}╯${c.reset}\n\n`;
+    // Time & Progress Bar
+    const timePlain = `⏱️  [ ${formatTime(playbackPos)} / ${formatTime(totalDuration)} ]  [${speed.toFixed(1)}x]${isPaused ? ' ⏸ PAUSED' : ''}`;
+    const timeDisplay = `⏱️  [ ${formatTime(playbackPos)} / ${formatTime(totalDuration)} ]  ${bar}  [${speed.toFixed(1)}x]${isPaused ? ` \x1b[93m⏸ PAUSED${colors.reset}` : ''}`;
+    const padLen = Math.max(0, boxWidth - timePlain.length - barWidth - 4);
+    frame += `  ${colors.primary}${border.vertical}${colors.reset}  ${timeDisplay}${' '.repeat(padLen)} ${colors.primary}${border.vertical}${colors.reset}\n`;
+
+    // Bottom of box
+    frame += `  ${colors.primary}${border.bottomLeft}${border.horizontal.repeat(boxWidth)}${border.bottomRight}${colors.reset}\n\n`;
 
     // Surrounding lyrics context (-2, -1, [Active], +1, +2)
     const prevLine2 = activeIndex >= 2 ? lines[activeIndex - 2].text : '';
@@ -228,39 +265,50 @@ export async function playLyrics(lrcText: string, options: PlayerOptions = {}): 
     const nextLine1 = activeIndex + 1 < lines.length ? lines[activeIndex + 1].text : '';
     const nextLine2 = activeIndex + 2 < lines.length ? lines[activeIndex + 2].text : '';
 
-    frame += `     ${c.gray}${prevLine2 || ' '}${c.reset}\n`;
-    frame += `     ${c.dim}${prevLine1 || ' '}${c.reset}\n`;
+    frame += `     ${colors.pastLine}${prevLine2 || ' '}${colors.reset}\n`;
+    frame += `     ${colors.dim}${prevLine1 || ' '}${colors.reset}\n`;
 
     if (currentLine) {
       if (currentLine.words && currentLine.words.length > 0) {
         // Karaoke word-by-word highlighting
         let wordStr = '';
-        for (const w of currentLine.words) {
+        const currentWordIdx = currentLine.words.findIndex((w) => w.timeSeconds > playbackPos);
+        const activeWordIndex = currentWordIdx === -1 ? currentLine.words.length - 1 : Math.max(0, currentWordIdx - 1);
+
+        for (let wi = 0; wi < currentLine.words.length; wi++) {
+          const w = currentLine.words[wi];
           if (playbackPos >= w.timeSeconds) {
-            wordStr += `${c.brightYellow}${c.bold}${w.word} ${c.reset}`;
+            // Active or sung word
+            if (wi === activeWordIndex && th.name === 'karaoke') {
+              wordStr += `\x1b[93m● \x1b[1m${w.word}\x1b[0m `;
+            } else {
+              wordStr += `${colors.wordHighlight}${w.word} ${colors.reset}`;
+            }
           } else {
-            wordStr += `${c.white}${w.word} ${c.reset}`;
+            wordStr += `${colors.wordPending}${w.word} ${colors.reset}`;
           }
         }
-        frame += `  ${c.brightGreen}🎤 ▶${c.reset} ${wordStr}${c.brightGreen}◀${c.reset}\n`;
+        frame += `  ${colors.activePrefix}${wordStr.trim()}${colors.activeSuffix}\n`;
       } else {
-        frame += `  ${c.brightCyan}${c.bold}🎤 ▶  ${currentLine.text}  ◀${c.reset}\n`;
+        frame += `  ${colors.activePrefix}${colors.activeLine}${currentLine.text}${colors.reset}${colors.activeSuffix}\n`;
       }
     } else {
-      frame += `  ${c.gray}── 🎶 (Instrumental Intro) ──${c.reset}\n`;
+      frame += `  ${colors.dim}── 🎶 (Instrumental Intro) ──${colors.reset}\n`;
     }
 
-    frame += `     ${c.white}${c.dim}${nextLine1 || ' '}${c.reset}\n`;
-    frame += `     ${c.gray}${nextLine2 || ' '}${c.reset}\n\n`;
+    frame += `     ${colors.nextLine}${nextLine1 || ' '}${colors.reset}\n`;
+    frame += `     ${colors.pastLine}${nextLine2 || ' '}${colors.reset}\n\n`;
 
-    frame += `  ${c.gray}${'─'.repeat(boxWidth)}${c.reset}\n`;
-    frame += `  ${c.gray}[Space] Pause/Play  │  [←/→] Seek 5s  │  [+/-] Speed  │  [q] Quit${c.reset}\n`;
+    // Status bar & Keyboard shortcuts
+    frame += `  ${colors.dim}${'─'.repeat(boxWidth)}${colors.reset}\n`;
+    frame += `  ${colors.dim}[Space] Pause │ [←/→] Seek 5s │ [+/-] Speed │ [t] Theme (${th.name}) │ [q] Quit${colors.reset}\n`;
 
     process.stdout.write(frame);
   };
 
   return new Promise<void>((resolve) => {
     let lastTimeMs = Date.now();
+    let spotifyCheckCounter = 0;
 
     const cleanup = () => {
       if (isExited) return;
@@ -274,7 +322,7 @@ export async function playLyrics(lrcText: string, options: PlayerOptions = {}): 
           } catch {}
           process.stdin.pause();
         }
-        process.stdout.write(`${c.showCursor}\n\n  ${c.green}✔ Playback finished.${c.reset}\n\n`);
+        process.stdout.write(`${c.showCursor}\n\n  \x1b[32m✔ Playback finished.\x1b[0m\n\n`);
       }
       resolve();
     };
@@ -309,6 +357,14 @@ export async function playLyrics(lrcText: string, options: PlayerOptions = {}): 
           return;
         }
 
+        // Switch Theme live on 't'
+        if (key.name === 't') {
+          themeIndex = (themeIndex + 1) % allThemes.length;
+          currentTheme = allThemes[themeIndex];
+          renderFrame(lastActiveIndex);
+          return;
+        }
+
         // Seek forward on Right arrow or 'l'
         if (key.name === 'right' || key.name === 'l') {
           playbackPos = Math.min(totalDuration, playbackPos + 5);
@@ -338,15 +394,36 @@ export async function playLyrics(lrcText: string, options: PlayerOptions = {}): 
       });
     }
 
-    // Main clock loop (runs at ~40ms intervals)
+    // Main clock loop (runs at ~40ms intervals for smooth 25fps visualizer & animations)
     const tickIntervalMs = isInteractive ? 40 : 100;
-    const timer = setInterval(() => {
+    const timer = setInterval(async () => {
       const now = Date.now();
       const deltaMs = now - lastTimeMs;
       lastTimeMs = now;
+      tickCount++;
 
       if (!isPaused) {
         playbackPos += (deltaMs / 1000) * speed;
+      }
+
+      // Check Spotify live sync if requested (every ~1.5s = ~38 ticks)
+      if (options.syncSpotify) {
+        spotifyCheckCounter++;
+        if (spotifyCheckCounter % 38 === 0) {
+          try {
+            const currentSpotify = await getSpotifyCurrentTrack();
+            if (currentSpotify && currentSpotify.query) {
+              const currentFull = `${trackArtist} - ${trackTitle}`.toLowerCase();
+              const newFull = currentSpotify.query.toLowerCase();
+              if (!newFull.includes(trackTitle.toLowerCase()) && !currentFull.includes(currentSpotify.title.toLowerCase())) {
+                // Track changed on Spotify!
+                trackTitle = currentSpotify.title;
+                trackArtist = currentSpotify.artist;
+                options.onSpotifyTrackChange?.(currentSpotify);
+              }
+            }
+          } catch {}
+        }
       }
 
       // Find currently active line
