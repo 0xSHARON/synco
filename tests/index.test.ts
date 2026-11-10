@@ -333,10 +333,32 @@ async function runTests() {
     }
   });
 
+  console.log('\n[Offline Lyrics Cache]');
+  await test('cache operations (set, get, stats, clear)', () => {
+    const testKey = 'Test Artist - Awesome Song 2026';
+    const testLrc = '[00:01.00] First test line\n[00:05.00] Second test line';
+
+    synco.setCachedLyrics(testKey, testLrc);
+    const retrieved = synco.getCachedLyrics(testKey);
+    assert.strictEqual(retrieved, testLrc);
+
+    const stats = synco.getCacheStats();
+    assert.ok(stats.count >= 1);
+    assert.ok(stats.sizeBytes > 0);
+    assert.ok(stats.path);
+
+    const cleared = synco.clearCache();
+    assert.ok(cleared >= 1);
+
+    const afterClear = synco.getCachedLyrics(testKey);
+    assert.strictEqual(afterClear, null);
+  });
+
   console.log(`\nTests finished: ${passed} passed, ${failed} failed.\n`);
   if (failed > 0) {
     process.exit(1);
   }
+  process.exit(0);
 }
 
 runTests();

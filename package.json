@@ -1,6 +1,6 @@
 {
   "name": "@0xsharon/synco",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "High-performance synchronized lyrics (.lrc) engine & animated CLI player with real-time Spotify auto-sync, 9 visual themes, equalizer audio visualizer, and multi-provider cascade (LRCLIB, Musixmatch, Megalobiz, NetEase, Deezer, Genius).",
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",

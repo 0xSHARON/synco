@@ -1,5 +1,6 @@
 import { execSync } from 'node:child_process';
 import os from 'node:os';
+import { winMedia } from './win-media.js';
 
 export interface SpotifyTrack {
   title: string;
@@ -139,9 +140,34 @@ export async function getSpotifyCurrentTrack(): Promise<SpotifyTrack | null> {
 }
 
 /**
- * Windows: Inspects Spotify window title via tasklist CSV / powershell.
+ * Windows: Inspects Spotify via high-speed WinRT Media Bridge or tasklist fallback.
  */
-function getSpotifyWindows(): SpotifyTrack | null {
+async function getSpotifyWindows(): Promise<SpotifyTrack | null> {
+  // 1. Try winMedia instant state (returns exact millisecond position and playing status in 0ms)
+  const mediaTrack = winMedia.getLatestTrack();
+  if (mediaTrack && mediaTrack.title) {
+    return mediaTrack;
+  }
+
+  // 2. If winMedia is warming up on cold start, try a fast async check (up to 250ms)
+  try {
+    const asyncTrack = await Promise.race([
+      winMedia.getTrackAsync(250),
+      new Promise<null>((r) => setTimeout(() => r(null), 250)),
+    ]);
+    if (asyncTrack && asyncTrack.title) {
+      return asyncTrack;
+    }
+  } catch {}
+
+  // 3. Fast fallback: inspect Spotify window title via tasklist CSV (~300ms)
+  return getSpotifyWindowsTasklist();
+}
+
+/**
+ * Windows fallback: Inspects Spotify window title via tasklist CSV / powershell.
+ */
+function getSpotifyWindowsTasklist(): SpotifyTrack | null {
   try {
     const raw = execSync('tasklist /v /fi "imagename eq spotify.exe" /fo csv', {
       encoding: 'utf-8',

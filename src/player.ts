@@ -9,6 +9,7 @@ import {
   type AnimationType,
 } from './themes.js';
 import { getSpotifyCurrentTrack, type SpotifyTrack } from './spotify.js';
+import { winMedia } from './win-media.js';
 
 export interface WordTag {
   timeSeconds: number;
@@ -184,6 +185,21 @@ export async function playLyrics(lrcText: string, options: PlayerOptions = {}): 
   let isExited = false;
   let tickCount = 0;
 
+  // On startup with Spotify sync: if startPosition is unset or 0, query Spotify's live position immediately
+  if (options.syncSpotify && (!options.startPosition || options.startPosition === 0)) {
+    try {
+      const sp = await getSpotifyCurrentTrack();
+      if (sp) {
+        if (typeof sp.position === 'number' && sp.position > 0) {
+          playbackPos = sp.position;
+        }
+        if (sp.isPlaying === false) {
+          isPaused = true;
+        }
+      }
+    } catch {}
+  }
+
   // Themes list for dynamic cycle switching via 't' key
   const allThemes = listThemes();
   let currentTheme: ThemeDefinition =
@@ -315,6 +331,10 @@ export async function playLyrics(lrcText: string, options: PlayerOptions = {}): 
       isExited = true;
       clearInterval(timer);
 
+      if (options.syncSpotify) {
+        winMedia.dispose();
+      }
+
       if (isInteractive) {
         if (process.stdin.isTTY) {
           try {
@@ -406,20 +426,42 @@ export async function playLyrics(lrcText: string, options: PlayerOptions = {}): 
         playbackPos += (deltaMs / 1000) * speed;
       }
 
-      // Check Spotify live sync if requested (every ~1.5s = ~38 ticks)
+      // Check Spotify live sync if requested (every ~400ms = 10 ticks)
       if (options.syncSpotify) {
         spotifyCheckCounter++;
-        if (spotifyCheckCounter % 38 === 0) {
+        if (spotifyCheckCounter % 10 === 0) {
           try {
             const currentSpotify = await getSpotifyCurrentTrack();
             if (currentSpotify && currentSpotify.query) {
               const currentFull = `${trackArtist} - ${trackTitle}`.toLowerCase();
               const newFull = currentSpotify.query.toLowerCase();
-              if (!newFull.includes(trackTitle.toLowerCase()) && !currentFull.includes(currentSpotify.title.toLowerCase())) {
+              if (
+                !newFull.includes(trackTitle.toLowerCase()) &&
+                !currentFull.includes(currentSpotify.title.toLowerCase())
+              ) {
                 // Track changed on Spotify!
                 trackTitle = currentSpotify.title;
                 trackArtist = currentSpotify.artist;
                 options.onSpotifyTrackChange?.(currentSpotify);
+              } else {
+                // Track is the same: sync playback state & position seamlessly
+                if (typeof currentSpotify.isPlaying === 'boolean') {
+                  if (currentSpotify.isPlaying === false && !isPaused) {
+                    isPaused = true;
+                    if (isInteractive) renderFrame(lastActiveIndex);
+                  } else if (currentSpotify.isPlaying === true && isPaused) {
+                    isPaused = false;
+                    if (isInteractive) renderFrame(lastActiveIndex);
+                  }
+                }
+
+                if (typeof currentSpotify.position === 'number' && currentSpotify.position >= 0) {
+                  const drift = Math.abs(playbackPos - currentSpotify.position);
+                  // If user seeked or drift exceeds 300ms, snap to Spotify position
+                  if (drift > 0.3) {
+                    playbackPos = currentSpotify.position;
+                  }
+                }
               }
             }
           } catch {}

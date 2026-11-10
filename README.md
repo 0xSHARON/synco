@@ -5,7 +5,7 @@
 
 <p align="left">
   <a href="https://www.npmjs.com/package/@0xsharon/synco"><img src="https://img.shields.io/npm/v/@0xsharon/synco?style=for-the-badge&logo=npm&color=CB3837&logoColor=white" alt="npm version" /></a>
-  <a href="https://github.com/0xSHARON/synco/packages"><img src="https://img.shields.io/badge/GitHub%20Packages-v1.2.0-%23121011.svg?style=for-the-badge&logo=github&logoColor=white" alt="GitHub Packages" /></a>
+  <a href="https://github.com/0xSHARON/synco/packages"><img src="https://img.shields.io/badge/GitHub%20Packages-v1.3.0-%23121011.svg?style=for-the-badge&logo=github&logoColor=white" alt="GitHub Packages" /></a>
   <a href="https://www.npmjs.com/package/@0xsharon/synco"><img src="https://img.shields.io/npm/dt/@0xsharon/synco?style=for-the-badge&color=22c55e&logo=npm&logoColor=white" alt="npm downloads" /></a>
   <a href="https://github.com/0xSHARON/synco/stargazers"><img src="https://img.shields.io/github/stars/0xSHARON/synco?style=for-the-badge&color=E3B341&logo=github&logoColor=white" alt="GitHub Stars" /></a>
   <a href="https://github.com/0xSHARON/synco/actions"><img src="https://img.shields.io/github/actions/workflow/status/0xSHARON/synco/ci.yml?branch=master&style=for-the-badge&logo=githubactions&logoColor=white&label=CI" alt="CI Status" /></a>
@@ -57,7 +57,10 @@ npx @0xsharon/synco get https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT
   [Space] Pause │ [←/→] Seek 5s │ [+/-] Speed │ [t] Theme (neon) │ [q] Quit
 ```
 
-> **Live Spotify Sync (`--sync`):** While running, `synco get` continuously follows your Spotify client. If you skip to the next song, `synco` automatically detects the change, retrieves the new lyrics, and continues streaming without interruption!
+> **⚡ Zero-Delay Playback & Real-Time Lockstep:**
+> - **Instant Position Alignment:** Detects Spotify's exact playback position down to the millisecond across Windows (WinRT), macOS (AppleScript), and Linux (MPRIS). When you start `synco get`, lyrics immediately display at Spotify's active second — no waiting, no desync.
+> - **Live Drift Correction:** If you pause, resume, or scrub the progress bar on Spotify, `synco` responds in <300ms without desynchronizing.
+> - **Auto-Track Transitions:** When Spotify moves to the next track, `synco` automatically detects the new song, fetches its lyrics, and continues streaming seamlessly.
 
 ---
 
@@ -111,7 +114,7 @@ npx @0xsharon/synco "Queen - Bohemian Rhapsody" --synced-only
 ```
 
 ```
-  🎵 synco v1.2.0
+  🎵 synco v1.3.0
   ✔ Query: "Queen - Bohemian Rhapsody"
   ✔ Match: "Bohemian Rhapsody" by Queen (Score: 100%, Duration: 05:54)
   ✔ Provider: LRCLIB (latency: 142ms)
@@ -121,6 +124,18 @@ npx @0xsharon/synco "Queen - Bohemian Rhapsody" --synced-only
 [00:03.58] Is this just fantasy?
 [00:07.12] Caught in a landslide, no escape from reality
 [00:14.34] Open your eyes, look up to the skies and see...
+```
+
+### 5. ⚡ Offline Lyrics Cache (0ms Instant Replay)
+
+All fetched synchronized lyrics are automatically cached to disk so subsequent replays, searches, or CLI plays load with **0ms latency**:
+
+```bash
+# Check cache statistics (path, track count, total size):
+npx @0xsharon/synco cache stats
+
+# Clear the offline lyrics cache:
+npx @0xsharon/synco cache clear
 ```
 
 ---

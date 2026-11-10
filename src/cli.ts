@@ -10,9 +10,13 @@ import {
   isSpotifyUrl,
   getTheme,
   listThemes,
+  formatTime,
+  clearCache,
+  getCacheStats,
   type ThemeName,
   type SpotifyTrack,
 } from './index.js';
+import { winMedia } from './win-media.js';
 
 export async function runCli(): Promise<void> {
   const program = new Command();
@@ -20,7 +24,7 @@ export async function runCli(): Promise<void> {
   program
     .name('synco')
     .description('Search, get, and play synchronized lyrics with Spotify sync, themes & animations')
-    .version('1.2.0', '-V, --version', 'Output the version number');
+    .version('1.3.0', '-V, --version', 'Output the version number');
 
   // ==========================================
   // 1. `synco get [track_or_url]` Sub-command
@@ -58,7 +62,11 @@ export async function runCli(): Promise<void> {
           query = spotifyTrack.query;
           detectedSpotify = true;
           spotifyTrackInfo = spotifyTrack;
-          console.log(`\n🎵 Detected currently playing on Spotify: "${query}"`);
+          const posText =
+            typeof spotifyTrack.position === 'number' && spotifyTrack.position > 0
+              ? ` (at ${formatTime(spotifyTrack.position)})`
+              : '';
+          console.log(`\n🎵 Detected currently playing on Spotify: "${query}"${posText}`);
         } else if (isSpotifyUrl(query)) {
           console.log(`\n🎧 Resolving Spotify track URL...`);
           const resolved = await resolveSpotifyUrl(query);
@@ -98,7 +106,8 @@ export async function runCli(): Promise<void> {
           } else {
             console.log(`\n✔ Saved lyrics for "${query}" to: ${opts.output}`);
           }
-          return;
+          winMedia.dispose();
+          process.exit(0);
         }
 
         // Verify synced
@@ -106,13 +115,22 @@ export async function runCli(): Promise<void> {
         if (lyricsType !== 'synced') {
           console.error('\n⚠️ Lyrics found, but they are plaintext without timestamps.');
           console.log('\n' + lrcContent);
-          return;
+          winMedia.dispose();
+          process.exit(0);
         }
 
         const speed = parseFloat(opts.speed) || 1.0;
         let activeQuery = query;
         let currentLrc = lrcContent;
         let currentTrackInfo = spotifyTrackInfo;
+
+        // Grab freshest position before starting so playback starts with 0ms offset
+        if (detectedSpotify && (!currentTrackInfo?.position || currentTrackInfo.position === 0)) {
+          const fresh = await getSpotifyCurrentTrack();
+          if (fresh && typeof fresh.position === 'number') {
+            currentTrackInfo = fresh;
+          }
+        }
 
         // Interactive sync & playback loop (auto-switches lyrics when Spotify track changes)
         while (shouldPlay) {
@@ -157,13 +175,15 @@ export async function runCli(): Promise<void> {
             break;
           }
         }
-
-        if (opts.output) {
+        if (opts.output && currentLrc) {
           const outPath = opts.output.replace('{search_term}', query);
           await fs.promises.mkdir(path.dirname(path.resolve(outPath)), { recursive: true });
-          await fs.promises.writeFile(path.resolve(outPath), lrcContent, 'utf-8');
+          await fs.promises.writeFile(path.resolve(outPath), currentLrc, 'utf-8');
           console.log(`Saved lyrics to: ${outPath}`);
         }
+
+        winMedia.dispose();
+        process.exit(0);
       } catch (err: any) {
         console.error('Error:', err?.message ?? err);
         process.exitCode = 1;
@@ -289,7 +309,32 @@ export async function runCli(): Promise<void> {
     });
 
   // ==========================================
-  // 4. Root `synco [search_term]` Default Action
+  // 4. `synco cache` Sub-command
+  // ==========================================
+  const cacheCmd = program.command('cache').description('Manage offline lyrics cache (0ms instant replay)');
+
+  cacheCmd
+    .command('stats')
+    .description('View local lyrics cache directory, cached tracks count and size')
+    .action(() => {
+      const stats = getCacheStats();
+      const kb = (stats.sizeBytes / 1024).toFixed(1);
+      console.log('\n📦 Synco Lyrics Cache Stats:');
+      console.log(`   Location:      ${stats.path}`);
+      console.log(`   Cached Tracks: ${stats.count}`);
+      console.log(`   Total Size:    ${kb} KB\n`);
+    });
+
+  cacheCmd
+    .command('clear')
+    .description('Clear all cached lyrics files')
+    .action(() => {
+      const removed = clearCache();
+      console.log(`\n🧹 Successfully cleared ${removed} cached lyrics file(s).\n`);
+    });
+
+  // ==========================================
+  // 5. Root `synco [search_term]` Default Action
   // ==========================================
   program
     .argument('[search_term]', 'The search term to find the track or local .lrc file path')
@@ -327,6 +372,7 @@ export async function runCli(): Promise<void> {
                 theme: opts.theme || 'neon',
                 title: spotify.title,
                 artist: spotify.artist,
+                startPosition: spotify.position ?? 0,
                 syncSpotify: true,
               });
               return;
@@ -400,8 +446,12 @@ export async function runCli(): Promise<void> {
             await fs.promises.writeFile(path.resolve(outPath), lrcContent, 'utf-8');
             console.log(`Saved lyrics to: ${outPath}`);
           }
+          winMedia.dispose();
+          process.exit(0);
         } else {
           console.log(lrcContent);
+          winMedia.dispose();
+          process.exit(0);
         }
       } catch (err: any) {
         console.error('Error:', err?.message ?? err);

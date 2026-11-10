@@ -22,8 +22,26 @@ export class Lrclib extends LRCProvider {
   public static readonly SEARCH_ENDPOINT = `${Lrclib.API_ENDPOINT}/search`;
   public static readonly LRC_ENDPOINT = `${Lrclib.API_ENDPOINT}/get/`;
 
+  public static readonly DIRECT_ENDPOINT = `${Lrclib.API_ENDPOINT}/get`;
+
   constructor(options: ProviderOptions = {}) {
     super(options);
+  }
+
+  public async getLrcByArtistAndTitle(artist: string, title: string): Promise<ILyrics | null> {
+    try {
+      const data = await this.get<LrclibTrack>(Lrclib.DIRECT_ENDPOINT, {
+        params: {
+          artist_name: artist,
+          track_name: title,
+        },
+      });
+      if (!data) return null;
+      if (data.syncedLyrics || data.plainLyrics) {
+        return new Lyrics(data.syncedLyrics || null, data.plainLyrics || null);
+      }
+    } catch {}
+    return null;
   }
 
   public async getLrcById(trackId: string | number): Promise<ILyrics | null> {
@@ -38,6 +56,19 @@ export class Lrclib extends LRCProvider {
   }
 
   public async getLrc(searchTerm: string): Promise<ILyrics | null> {
+    // Fast path: if query is formatted as "Artist - Title", try exact direct lookup first
+    const dashIdx = searchTerm.indexOf(' - ');
+    if (dashIdx !== -1) {
+      const artist = searchTerm.substring(0, dashIdx).trim();
+      const title = searchTerm.substring(dashIdx + 3).trim();
+      if (artist && title) {
+        const direct = await this.getLrcByArtistAndTitle(artist, title);
+        if (direct && direct.synced) {
+          return direct;
+        }
+      }
+    }
+
     const data = await this.get<LrclibTrack[]>(Lrclib.SEARCH_ENDPOINT, {
       params: { q: searchTerm },
     });

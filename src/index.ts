@@ -39,12 +39,21 @@ import {
   type SpotifyTrack,
 } from './spotify.js';
 
+import {
+  getCachedLyrics,
+  setCachedLyrics,
+  clearCache,
+  getCacheStats,
+  getCacheDir,
+} from './cache.js';
+
 export * from './types.js';
 export * from './lyrics.js';
 export * from './utils.js';
 export * from './player.js';
 export * from './themes.js';
 export * from './spotify.js';
+export * from './cache.js';
 export * from './providers/index.js';
 
 /**
@@ -110,6 +119,24 @@ export async function search(
     targetType = TargetType.SYNCED_ONLY;
   } else if (opts.plainOnly) {
     targetType = TargetType.PLAINTEXT;
+  }
+
+  // Check disk cache first for 0ms instant retrieval
+  const cached = getCachedLyrics(effectiveSearchTerm);
+  if (cached) {
+    logger.debug(`Found cached lyrics for "${effectiveSearchTerm}" (0ms)`);
+    if (opts.savePath) {
+      const finalPath = opts.savePath.replace('{search_term}', effectiveSearchTerm);
+      try {
+        const lyr = new Lyrics();
+        lyr.addUnknown(cached);
+        await lyr.saveLrcFile(finalPath, targetType);
+        logger.debug(`Saved cached lyrics to: ${finalPath}`);
+      } catch (err: any) {
+        logger.error(`Failed to save lyrics file: ${err?.message ?? err}`);
+      }
+    }
+    return cached;
   }
 
   // Determine provider list
@@ -196,13 +223,18 @@ export async function search(
 
   const result = combinedLyrics.toStr(targetType);
 
-  if (result && opts.savePath) {
-    const finalPath = opts.savePath.replace('{search_term}', effectiveSearchTerm);
-    try {
-      await combinedLyrics.saveLrcFile(finalPath, targetType);
-      logger.debug(`Saved lyrics to: ${finalPath}`);
-    } catch (err: any) {
-      logger.error(`Failed to save lyrics file: ${err?.message ?? err}`);
+  if (result) {
+    // Automatically cache valid lyrics for 0ms subsequent retrieval
+    setCachedLyrics(effectiveSearchTerm, result);
+
+    if (opts.savePath) {
+      const finalPath = opts.savePath.replace('{search_term}', effectiveSearchTerm);
+      try {
+        await combinedLyrics.saveLrcFile(finalPath, targetType);
+        logger.debug(`Saved lyrics to: ${finalPath}`);
+      } catch (err: any) {
+        logger.error(`Failed to save lyrics file: ${err?.message ?? err}`);
+      }
     }
   }
 
@@ -223,6 +255,11 @@ export type SyncoCallable = {
   resolveSpotifyUrl: typeof resolveSpotifyUrl;
   isSpotifyUrl: typeof isSpotifyUrl;
   watchSpotify: typeof watchSpotify;
+  getCachedLyrics: typeof getCachedLyrics;
+  setCachedLyrics: typeof setCachedLyrics;
+  clearCache: typeof clearCache;
+  getCacheStats: typeof getCacheStats;
+  getCacheDir: typeof getCacheDir;
   THEMES: typeof THEMES;
   Lyrics: typeof Lyrics;
   TargetType: typeof TargetType;
@@ -253,6 +290,11 @@ export const synco = Object.assign(
     resolveSpotifyUrl,
     isSpotifyUrl,
     watchSpotify,
+    getCachedLyrics,
+    setCachedLyrics,
+    clearCache,
+    getCacheStats,
+    getCacheDir,
     THEMES,
     Lyrics,
     TargetType,
